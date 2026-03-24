@@ -1,0 +1,2853 @@
+---
+title: "Food-labeling.-An-experiment-to-assess-consumer-choices_interactions 29112024 Update d-prime"
+author: "Constanza Avalos"
+date: "2024-11-29"
+output:
+  html_document:
+    theme: cerulean
+    toc: yes
+    toc_float: yes
+  word_document:
+    toc: yes
+  pdf_document:
+    latex_engine: xelatex
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Clear cache
+
+```{r cache}
+
+# Clear the R package cache by removing the temporary directory
+unlink(tempdir(), recursive = TRUE)
+
+# Optionally, clear the .Rhistory file if needed
+if (file.exists(".Rhistory")) {
+  file.remove(".Rhistory")
+}
+
+# Clear the workspace
+rm(list = ls())
+
+```
+## Directory
+
+```{r directory}
+
+# Set a new temporary directory for R
+new_temp_dir <- "C:/Users/cavalos/OneDrive - The Alan Turing Institute/Desktop/PhD CAV/Paper  1"
+dir.create(new_temp_dir, recursive = TRUE, showWarnings = FALSE)
+tempdir <- new_temp_dir
+Sys.setenv(TMPDIR = new_temp_dir)
+
+# Verify the new temporary directory
+print(tempdir)
+
+```
+
+## Import data
+
+The aim of the research is to determine the extent to which the presence or absence of different food labelling affects consumers' decision-making. This is addressed through an online survey, in which data will be collected from each participant. Experimental data collected in August 2024.
+
+Participants chose breakfast cereals in an online shopping experience. This choice task is unique in that each participant is randomly assigned to a group where different types of food labels or none at all will appear. Participants also completed questions about personal and household circumstances to determine how labelling influences choices.
+
+The project has been reviewed by The University of Manchester Research Ethics Committee and approval has been granted to conduct this study (Reference number: 2024-16718-35972). School of Social Sciences Fieldwork Bursary, University of Manchester (Reference number: SF2324/298); and ANID-Chile (Agencia Nacional de Investigación y Desarrollo).
+
+```{r data}
+
+library(readr)
+library(dplyr)
+library(Matrix)
+library(lme4)
+library(texreg)
+
+#df <- read_csv("C:/Users/const/OneDrive/Desktop/PhD/Papers and Reports/Paper 1st/4. Dataset/Food labelling WM_03112024.csv")
+
+df <- read_csv("C:/Users/cavalos/OneDrive - The Alan Turing Institute/Desktop/PhD CAV/Paper  1/Food labelling WM_03112024.csv")
+
+#changing column names
+colnames(df)[c(146, 156, 161, 166, 98, 136, 141, 103, 104, 105, 106, 107, 108, 109, 110, 27, 32, 185, 126, 131, 125, 119, 120, 93)] <- c("Sex", "Ethnicity", "Level_Education", "Income", "FamiliarityBrands", "Check_Ingredients", "Check_nutricontent", "Cereal healthiness1", "Cereal healthiness2", "Cereal healthiness3", "Cereal healthiness4","Cereal healthiness5","Cereal healthiness6","Cereal healthiness7", "Cereal healthiness8", "Purchase12months", "Consent", "Rtime", "Children", "Responsable", "Loseweight", "Weight", "Height", "Having information")
+
+
+ df <- df %>%
+  mutate(Groups = case_when(
+    Groups == "No label" ~ "Absent",
+    TRUE ~ as.character(Groups)
+  ))
+
+ 
+```
+
+## Database cleaning, caution: I would not choose\nany of them means
+
+Each participant is assigned to one of three experimental conditions: absent, coarse labels (4 partitions), and detailed labels (8 partitions). In the choice task, one group presents a cereal package with no labels, while two groups present different labels indicating the amount of calories per 100 grams. The task consists of 16 trials.
+
+For each group, the cereal brand is identified with a code in the database. Each cereal brand represents a specific amount of calories per 100 grams. 
+
+Nestle Shredded Wheat Cereal = 360
+Quaker Rolled Oats Porridge 500g = 374
+Kellogg's Crunchy Nut Breakfast Cereal = 392
+Kellogg's Choco Wheats Cereal 480g = 398
+Quaker Oat Granola Honey & Almond Cereal = 423
+Kellogg's Crunchy Nut Not So Nutty Red Berries Granola = 431
+Nestle Curiously Cinnamon Cereal 375g = 453
+Kellogg's Krave Chocolate Hazelnut Breakfast Cereal = 470
+
+There was a mistake calculating the calorie count because the alternative I would not choose\nany of them means. It depends on the data set, if it is csv I would not choose any of them.then. 
+
+
+```{r data2}
+
+library(dplyr)
+
+df <- df %>%
+  mutate_at(vars(35:50), 
+            funs(case_when(
+              . == "IM_e9a6CSGHqHCBcdU" ~ "360",
+              . == "IM_cUa2Sgw1Z4KERE2" ~ "374",
+              . == "IM_882CtF42zwvUZv0" ~ "392",
+              . == "IM_8GNIM0Fzob6BZJQ" ~ "398",
+              . == "IM_3r4Nrp3TqC6BOlg" ~ "423",
+              . == "IM_6nGGAjM99GrIGwK" ~ "431",
+              . == "IM_dgaZUlSdxdpoDbM" ~ "453",
+              . == "IM_6DzLXmUBf30NEXA" ~ "470",
+              . == "I would not choose any of them." ~ "0",
+              TRUE ~ .
+            )))
+
+#Without label - Number of calories per trial 
+
+df[,35:50] <- lapply(df[,35:50], as.numeric) #set as numeric variable
+which(colnames(df) == "If these were your only breakfast cereal options, which one would you choose to buy?...50") #Number of columns
+
+df <- df %>%
+  mutate_at(vars(53:68), 
+            funs(case_when(
+              . == "IM_1KZpRUO6kugeBJs" ~ "360",
+              . == "IM_5uvozsuUyMi5oiO" ~ "374",
+              . == "IM_26uPBkRfbvYlNtA" ~ "392",
+              . == "IM_87CKtqLPlGEpKyW" ~ "398",
+              . == "IM_9GG0vzD8syY5gZ8" ~ "423",
+              . == "IM_cDchasU2JMCLGPY" ~ "431",
+              . == "IM_bClay6uLEv1947Y" ~ "453",
+              . == "IM_38z9sbBLDw2DZye" ~ "470",
+              . == "I would not choose\nany of them." ~ "0",
+              TRUE ~ .
+            )))
+
+#Coarse label - Number of calories per trial 
+
+df[,53:68] <- lapply(df[,53:68], as.numeric) #set as numeric variable
+which(colnames(df) == "If these were your only breakfast cereal options, which one would you choose to buy?...68") #Number of column
+
+#Detailed labels
+
+df[df == 'IM_bD60xtkWv7LAzWu'] <- '360'
+df[df == 'IM_cvHHTjxvJJQ9Sei'] <- '374'
+df[df == 'IM_7UlNvrv1Fpncje6'] <- '392'
+df[df == 'IM_3DdXt6qErfzF0HQ'] <- '398'
+df[df == 'IM_da6wfDAIiOzWtCu'] <- '423'
+df[df == 'IM_cCQp6UJg0Ly2YSO'] <- '423'
+df[df == 'IM_0cTjPIwPK25YKai'] <- '431'
+df[df == 'IM_8e2MDrjUVIOJZci'] <- '453'
+df[df == 'IM_bQ2lxJbuEZc3fpk'] <- '470'
+df[df == 'I would not choose\nany of them.'] <- '0'
+
+#Detailed label - Number of calories per trial 
+
+df[,72:87] <- lapply(df[,72:87], as.numeric) #set as numeric variable
+which(colnames(df) == "If these were your only breakfast cereal options, which one would you choose to buy?...87") #Number of column
+
+```
+## Recoded variables
+
+
+```{r data3}
+
+library(dplyr)
+
+df$Ethnicity_reco <- ifelse(df$Ethnicity == 'White', "White",
+                            ifelse(df$Ethnicity == 'Prefer not to say', "Prefer not to say", "Mixed"))
+cross_tab <- table(df$Ethnicity_reco, df$Groups)
+print(cross_tab)
+
+df$Income2 <- ifelse(df$Income %in% c("Above £40,000", "£30,001 - £40,000"), "£30,001 - Above £40,000",
+                     ifelse(df$Income == "Prefer not to say", "Prefer not to say", "Below £10,000 - £30,000"))
+cross_tab1 <- table(df$Income2, df$Groups)
+print(cross_tab1)
+
+df$Age2 <- ifelse(df$Age %in% c("18-24", "25-34"), "18-34",
+                     ifelse(df$Age %in% c("35-44", "45-54"), "35-54", "55-65+"))
+cross_tab2 <- table(df$Age2, df$Groups)
+print(cross_tab2)
+
+df$Level_Education2 <- ifelse(df$Level_Education %in% c("Higher or secondary or further education (A-levels, BTEC, etc.)", "Post-graduate degree"), "High Education",
+                     ifelse(df$Level_Education == "Prefer not to say", "Prefer not to say", "Low Education"))
+
+df$Groups <- as.factor(df$Groups)
+df$Groups <- relevel(df$Groups, ref = 'Absent')
+table(df$Groups)
+
+df$Level_Education2 <- as.factor(df$Level_Education2)
+df$Level_Education2 <- relevel(df$Level_Education2 , ref = 'Prefer not to say')
+
+df$Loseweight <- as.factor(df$Loseweight)
+df$Loseweight <- relevel(df$Loseweight , ref = 'Prefer not to say')
+
+ df <- df %>%  
+   # Convert height to meters in a new column  
+   mutate(Height_m = Height / 100,  
+          BMI = Weight / (Height_m^2)) %>%  
+   mutate(BMI_category = case_when(  
+     BMI < 18.5 ~ "Underweight",  
+     BMI >= 18.5 & BMI < 25 ~ "Normal weight",  
+     BMI >= 25 & BMI < 30 ~ "Overweight",  
+     BMI >= 30 ~ "Obesity",  
+     TRUE ~ NA_character_  
+   )) %>%  
+   mutate(BMI_category = factor(BMI_category,   
+                                levels = c("Underweight", "Normal weight", "Overweight", "Obesity"),  
+                                ordered = TRUE)) 
+ 
+cross_tab3 <- table(df$BMI_category, df$Groups)
+print(cross_tab3)
+
+cross_tab_percentbmi <- prop.table(cross_tab3, margin = 2) * 100
+print(cross_tab_percentbmi)
+
+ 
+```
+## Chi squares comparisons
+
+
+```{r chi}
+
+ # Create a contingency table of Groups vs. BMI_category  
+ bmi_table <- with(df, table(Groups, BMI_category))  
+ print(bmi_table)  
+   
+ # Run the chi-square test  
+ chi_test <- chisq.test(bmi_table)  
+ print(chi_test)
+ 
+ bmi_table1 <- with(df, table(Groups, Sex)) 
+ chi_test1 <- chisq.test(bmi_table1)  
+ print(chi_test1)
+ 
+ bmi_table2 <- with(df, table(Groups, Age2)) 
+ chi_test2 <- chisq.test(bmi_table2)  
+ print(chi_test2)
+
+ bmi_table3 <- with(df, table(Groups, Ethnicity_reco)) 
+ chi_test3 <- chisq.test(bmi_table3)  
+ print(chi_test3)
+ 
+ bmi_table4 <- with(df, table(Groups, df$Level_Education2)) 
+ chi_test4 <- chisq.test(bmi_table4)  
+ print(chi_test4)
+ 
+ bmi_table5 <- with(df, table(Groups, df$Income2)) 
+ chi_test5 <- chisq.test(bmi_table5)  
+ print(chi_test5)
+
+ bmi_table6 <- with(df, table(Groups, df$Children)) 
+ chi_test6 <- chisq.test(bmi_table6)  
+ print(chi_test6)
+
+ bmi_table7 <- with(df, table(Groups, df$Loseweight)) 
+ chi_test7 <- chisq.test(bmi_table7)  
+ print(chi_test7)
+
+  bmi_table8 <- with(df, table(Groups, df$Responsable)) 
+ chi_test8 <- chisq.test(bmi_table8)  
+ print(chi_test8)
+ 
+ bmi_table9 <- with(df, table(Groups, df$Check_Ingredients)) 
+ chi_test9 <- chisq.test(bmi_table9)  
+ print(chi_test9)
+ 
+ bmi_table10 <- with(df, table(Groups, df$FamiliarityBrands)) 
+ chi_test10 <- chisq.test(bmi_table10)  
+ print(chi_test10)
+ 
+
+ df$seeing_labels_combined <- df[[69]]  # First, copy all values from first column
+df$seeing_labels_combined[is.na(df$seeing_labels_combined)] <- df[[88]][is.na(df$seeing_labels_combined)]  # Then fill in from second column only where first column is NA
+
+# Subset to only Coarse and Detailed groups, and exclude NA in the combined label variable
+subset_df_seeinglabels <- df[df$Groups %in% c("Coarse", "Detailed") & !is.na(df$seeing_labels_combined), ]
+
+table(df$seeing_labels_combined, df$Groups)
+table(subset_df_seeinglabels$seeing_labels_combined, subset_df_seeinglabels$Groups)
+
+bmi_table11 <- with(subset_df_seeinglabels, table(Groups, subset_df_seeinglabels$seeing_labels_combined)) 
+chi_test11 <- chisq.test(bmi_table11)  
+print(chi_test11)
+
+df$Having_information_recode <- as.character(df$`Having information`)
+df$Having_information_recode[df$Having_information_recode == 'Information overload' | df$Having_information_recode == 'Somewhat sufficient'] <- 'Overload or Sufficient'
+
+table(df$Having_information_recode, df$Groups)
+
+bmi_table12 <- with(df, table(Groups, Having_information_recode)) 
+ chi_test12 <- chisq.test(bmi_table12)  
+ print(chi_test12)
+ 
+
+```
+## ANOVA comparisons
+
+ANOVA (Analysis of Variance) rather than t-test. ANOVA is specifically designed for comparing means across three or more groups, while t-tests are limited to comparing two groups at a time.
+
+The p-value (Pr(>F)) is 0.43, which is greater than the conventional significance level of 0.05.
+This means there is no statistically significant difference in the mean product preference rankings across your three groups (absent, coarse label, and detailed label).
+
+
+```{r anova}
+
+anova <- aov(df$`Cereal healthiness1` ~ Groups, data = df)
+summary(anova)
+
+anova1 <- aov(df$`Rank the 8 cereal packages from most preferred to least preferred by dragging the products to change their order of position. The blue number on the left side indicates the position of the product in the list. - IM_cUa2Sgw1Z4KERE2` ~ Groups, data = df)
+summary(anova1)
+
+anova2 <- aov(df$`Rank the 8 cereal packages from most preferred to least preferred by dragging the products to change their order of position. The blue number on the left side indicates the position of the product in the list. - IM_lnH5RoeqxamC6re` ~ Groups, data = df)
+summary(anova2)
+
+anova3 <- aov(df$`Rank the 8 cereal packages from most preferred to least preferred by dragging the products to change their order of position. The blue number on the left side indicates the position of the product in the list. - IM_882CtF42zwvUZv0` ~ Groups, data = df)
+summary(anova3)
+
+anova4 <- aov(df$`Rank the 8 cereal packages from most preferred to least preferred by dragging the products to change their order of position. The blue number on the left side indicates the position of the product in the list. - IM_dgaZUlSdxdpoDbM` ~ Groups, data = df)
+summary(anova4)
+
+anova5 <- aov(df$`Rank the 8 cereal packages from most preferred to least preferred by dragging the products to change their order of position. The blue number on the left side indicates the position of the product in the list. - IM_3r4Nrp3TqC6BOlg` ~ Groups, data = df)
+summary(anova5)
+
+anova6 <- aov(df$`Rank the 8 cereal packages from most preferred to least preferred by dragging the products to change their order of position. The blue number on the left side indicates the position of the product in the list. - IM_6DzLXmUBf30NEXA` ~ Groups, data = df)
+summary(anova6)
+
+anova8 <- aov(df$`Cereal healthiness8` ~ Groups, data = df)
+summary(anova8)
+
+# Replace Product2, Product5, Product6 with your actual column names  
+manova_result <- manova(cbind(`Cereal healthiness1`, `Cereal healthiness2`, `Cereal healthiness3`,`Cereal healthiness4`,`Cereal healthiness5`,`Cereal healthiness6`,`Cereal healthiness7`, `Cereal healthiness8`) ~ Groups, data = df) 
+summary(manova_result)
+
+# Post hoc analysis  
+ product4_aov <- aov(`Cereal healthiness4` ~ Groups, data = df)  
+ TukeyHSD(product4_aov)
+ 
+ product6_aov <- aov(`Cereal healthiness6` ~ Groups, data = df)  
+ TukeyHSD(product6_aov)
+ 
+ product8_aov <- aov(`Cereal healthiness8` ~ Groups, data = df)  
+ TukeyHSD(product8_aov)
+
+
+
+```
+
+
+## Getting variable 'Calorie Count'
+
+We study how to estimate the effect of an food label format on an outcome using RCTs. This parameter is generally called the Average Treatment Effect (ATE).
+
+The coefficients in the regression output will represent:
+
+Yi = β0 + β1FoodLabels + γXi + ϵi
+
+Where: 
+
+β0 is the mean outcome in the control (absent) group,
+β1 is the ATE of Food labels
+Xi represents the covariates,
+γ represents the coefficients for covariates.
+
+Interpretations of coefficients:
+
+The ATE for 'coarse' labels compared to 'absent' (control group),
+The ATE for 'detailed' labels compared to 'absent' (control group)
+
+Model 1, 2, 3, 4, 5, controls by covariates
+
+```{r calories, echo=FALSE}
+
+#Create new variable for number of calories per individual
+
+df$CaloriesNL <- rowMeans(df[, c(35:50)], na.rm = TRUE)
+df$CaloriesCo <- rowMeans(df[, c(53:68)], na.rm = TRUE)
+df$CaloriesDe <- rowMeans(df[, c(72:87)], na.rm = TRUE)
+df$CalorieTotal <- rowSums(df[, c(200:202)], na.rm = TRUE)
+
+mean(df$CaloriesNL, na.rm = TRUE)
+mean(df$CaloriesCo, na.rm = TRUE)
+mean(df$CaloriesDe, na.rm = TRUE)
+mean(df$CalorieTotal)
+
+#library(readr)
+
+#write_csv(df, "C:\\Users\\cavalos\\OneDrive - The Alan Turing Institute\\Desktop\\PhD CAV\\Paper  1\\df.csv")
+
+
+```
+
+## Getting working memory test Z values 
+
+- The basic formula for a sample is:
+
+z = (x – μ) / σ
+
+For example, let’s say you have a test score of 190. The test has a mean (μ) of 150 and a standard deviation (σ) of 25. Assuming a normal distribution, your score would be:
+
+z = (x – μ) / 
+
+= (190 – 150) / 25 = 1.6.
+
+It is a combination but Participants who achieved less than 6 hits or had more than 17 false alarm in 1-back block do not proceed to 2-back block. 
+
+```{r wm, echo=FALSE}
+
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+
+# Define our helper functions
+safe_qnorm <- function(p) {
+  if (is.na(p)) {
+    return(NA)
+  } else {
+    return(qnorm(p))
+  }
+}
+
+improved_apply_correction <- function(hit_rate, fa_rate, signal_trials, noise_trials) {  
+   # Initialize with the original values  
+   corrected_hit_rate <- hit_rate  
+   corrected_fa_rate <- fa_rate  
+     
+   # Only apply corrections if values are not NA  
+   if (!is.na(hit_rate)) {  
+     if (hit_rate == 1) {  
+       corrected_hit_rate <- (signal_trials - 0.5) / signal_trials  
+     } else if (hit_rate == 0) {  
+       corrected_hit_rate <- 0.5 / signal_trials  
+     }  
+   }  
+     
+   if (!is.na(fa_rate)) {  
+     if (fa_rate == 0) {  
+       corrected_fa_rate <- 0.5 / noise_trials 
+     } else if (fa_rate == 1) {  
+       corrected_fa_rate <- (noise_trials - 0.5) / noise_trials  
+     }  
+   }  
+     
+   return(list(hit_rate = corrected_hit_rate, fa_rate = corrected_fa_rate))  
+ }  
+
+# Define trial counts
+signal_trials <- 30
+noise_trials <- 48
+
+# PART 1: Calculate hit rates and false alarm rates for 1-back
+df <- df %>%
+  mutate(
+    hit1 = signal_trials - nBack1MISS,
+    hit_rate_1 = hit1 / signal_trials,
+    fa_rate_1 = nBack1FA / noise_trials
+  )
+
+# PART 2: Apply corrections to 1-back data
+df <- df %>%
+  rowwise() %>%
+  mutate(
+    # Apply correction safely
+    corrected_1 = list(improved_apply_correction(hit_rate_1, fa_rate_1, signal_trials, noise_trials)),
+    corrected_hit_rate_1 = corrected_1$hit_rate,
+    corrected_fa_rate_1 = corrected_1$fa_rate
+  )
+# PART 3: Calculate z-scores for 1-back data using the corrected rates
+df <- df %>%
+  rowwise() %>%
+  mutate(
+    z_hit_1 = safe_qnorm(corrected_hit_rate_1),
+    z_fa_1 = safe_qnorm(corrected_fa_rate_1),
+    dprime1 = if_else(!is.na(z_hit_1) & !is.na(z_fa_1), z_hit_1 - z_fa_1, NA_real_)
+  ) %>%
+  ungroup()
+
+##### 2-black block
+
+# PART 1: Calculate hit rates and false alarm rates for 1-back
+df <- df %>%
+  mutate(
+    hit2 = signal_trials - nBack2MISS,
+    hit_rate_2 = hit2 / signal_trials,
+    fa_rate_2 = nBack2FA / noise_trials
+  )
+
+# PART 2: Apply corrections to 1-back data
+df <- df %>%
+  rowwise() %>%
+  mutate(
+    # Apply correction safely
+    corrected_2 = list(improved_apply_correction(hit_rate_2, fa_rate_2, signal_trials, noise_trials)),
+    corrected_hit_rate_2 = corrected_2$hit_rate,
+    corrected_fa_rate_2 = corrected_2$fa_rate
+  )
+# PART 3: Calculate z-scores for 1-back data using the corrected rates
+df <- df %>%
+  rowwise() %>%
+  mutate(
+    z_hit_2 = safe_qnorm(corrected_hit_rate_2),
+    z_fa_2 = safe_qnorm(corrected_fa_rate_2),
+    dprime2 = if_else(!is.na(z_hit_2) & !is.na(z_fa_2), z_hit_2 - z_fa_2, NA_real_)
+  ) %>%
+  ungroup()
+
+##### 3-black block
+
+# PART 1: Calculate hit rates and false alarm rates for 1-back
+df <- df %>%
+  mutate(
+    hit3 = signal_trials - nBack3MISS,
+    hit_rate_3 = hit3 / signal_trials,
+    fa_rate_3 = nBack3FA / noise_trials
+  )
+
+# PART 2: Apply corrections to 1-back data
+df <- df %>%
+  rowwise() %>%
+  mutate(
+    # Apply correction safely
+    corrected_3 = list(improved_apply_correction(hit_rate_3, fa_rate_3, signal_trials, noise_trials)),
+    corrected_hit_rate_3 = corrected_3$hit_rate,
+    corrected_fa_rate_3 = corrected_3$fa_rate
+  )
+# PART 3: Calculate z-scores for 1-back data using the corrected rates
+df <- df %>%
+  rowwise() %>%
+  mutate(
+    z_hit_3 = safe_qnorm(corrected_hit_rate_3),
+    z_fa_3 = safe_qnorm(corrected_fa_rate_3),
+    dprime3 = if_else(!is.na(z_hit_3) & !is.na(z_fa_3), z_hit_3 - z_fa_3, NA_real_)
+  ) %>%
+  ungroup()
+
+
+sum(!is.na(df$dprime1))  
+sum(!is.na(df$dprime2))  
+sum(!is.na(df$dprime3))  
+mean(df$dprime2, na.rm = TRUE)
+mean(df$dprime3, na.rm = TRUE)
+mean(df$dprime1, na.rm = TRUE)
+sd(df$dprime1, na.rm = TRUE)
+sd(df$dprime2, na.rm = TRUE)
+sd(df$dprime3, na.rm = TRUE)
+
+summary_dprime1 <- aggregate(df$dprime1 ~ Groups, data = df, 
+                              FUN = function(x) c(Mean = mean(x), SD = sd(x)))
+summary_dprime2 <- aggregate(df$dprime2 ~ Groups, data = df, 
+                              FUN = function(x) c(Mean = mean(x), SD = sd(x)))
+summary_dprime3 <- aggregate(df$dprime3 ~ Groups, data = df, 
+                              FUN = function(x) c(Mean = mean(x), SD = sd(x)))
+
+# Create a copy of the dataframe  
+ df <- df  
+   
+ # Convert columns that are lists to a collapsed string representation  
+ for (col in names(df)) {  
+   if (is.list(df[[col]])) {  
+     df[[col]] <- sapply(df[[col]], function(x) paste(x, collapse = "; "))  
+   }  
+ }  
+   
+ # Write the fixed dataframe to CSV  
+ write.csv(df, "df.csv", row.names = FALSE)  
+ 
+```
+
+## ANOVA comparisons N-back
+
+ANOVA (Analysis of Variance) rather than t-test. ANOVA is specifically designed for comparing means across three or more groups, while t-tests are limited to comparing two groups at a time.
+
+The p-value (Pr(>F)) is 0.43, which is greater than the conventional significance level of 0.05.
+This means there is no statistically significant difference in the mean product preference rankings across your three groups (absent, coarse label, and detailed label).
+
+
+```{r anova2}
+
+ ##### N-back
+ 
+anova_dprime1 <- aov(dprime1 ~ Groups, data = df)
+summary(anova_dprime1)
+
+anova_dprime2 <- aov(dprime2 ~ Groups, data = df)
+summary(anova_dprime2)
+
+anova_dprime3 <- aov(dprime3 ~ Groups, data = df)
+summary(anova_dprime3)
+
+```
+
+## Getting working memory test plots
+
+```{r wmplot, echo=FALSE}
+
+
+# Reshape the dataframe for plotting distributions using tidyr:
+plot_data_d <- df %>%
+  select(dprime1, dprime2, dprime3) %>%
+  pivot_longer(everything(), names_to = "Condition", values_to = "dprime")
+
+# Create the distribution plot using ggplot2:
+p <- ggplot(plot_data_d, aes(x = dprime, fill = Condition)) + 
+  geom_histogram(bins = 30, alpha = 0.6, position = "identity") +
+  facet_wrap(~ Condition, scales = "free") +
+  theme_minimal() +
+  labs(title = "Z value distribution of d' for Each n-back Level",
+       x = "d'",
+       y = "Count")
+
+print(p)
+
+# Select columns for FA and MISS for each level:
+# nBack1, nBack2, and nBack3
+fa_miss_data <- df %>%
+  select(nBack1FA, nBack1MISS, nBack2FA, nBack2MISS, nBack3FA, nBack3MISS)
+
+# Reshape the data using gather() for a long format
+plot_data1 <- fa_miss_data %>% 
+  gather(key = "Measure", value = "Count",
+         nBack1FA, nBack1MISS, nBack2FA, nBack2MISS, nBack3FA, nBack3MISS)
+
+# Optionally, create new columns for Condition and Measure, if your column names are formatted
+# as e.g. "nBack1FA" where the number and "FA"/"MISS" can be separated.
+plot_data2 <- plot_data1 %>%
+  mutate(
+    Condition = sub("nBack([0-9]).*", "nBack\\1", Measure),
+    MeasureType = ifelse(grepl("FA", Measure), "False Alarm", "Miss")
+  )
+
+# Create the plot
+p1 <- ggplot(plot_data2, aes(x = Count, fill = MeasureType)) +
+  geom_histogram(bins = 30, alpha = 0.6, position = "identity") +
+  facet_grid(MeasureType ~ Condition, scales = "free") +
+  theme_minimal() +
+  labs(title = "Distribution of False Alarms and Misses for Each n-back Level",
+       x = "Count",
+       y = "Frequency")
+
+print(p1)
+
+
+
+```
+
+## Getting working memory test plots by treatment groups
+
+```{r wmplot1, echo=FALSE}
+
+long_df <- df %>%  
+   select(Groups, dprime1, dprime2, dprime3) %>%  
+   gather(key = "Condition", value = "dprime", dprime1, dprime2, dprime3)  
+   
+ # Adjust the condition names using recode() with string literals  
+ long_df <- long_df %>%  
+   mutate(Condition = recode(Condition,  
+                             "dprime1" = "1-back",  
+                             "dprime2" = "2-back",  
+                             "dprime3" = "3-back")) 
+
+# Now, calculate mean dprime for each Treatment and Condition combination
+summ_df <- long_df %>%
+  group_by(Groups, Condition) %>%
+  summarise(mean_dprime = mean(dprime, na.rm = TRUE),
+            se_dprime = sd(dprime, na.rm = TRUE)/sqrt(n()),
+            .groups = "drop")
+
+#Create the boxplot
+p_box <- ggplot(long_df, aes(x = Groups, y = dprime, fill = Groups)) +
+  geom_boxplot() +
+  facet_wrap(~ Condition) +
+  scale_fill_manual(values = c("1-back" = "#666666", 
+                               "2-back" = "#999999", 
+                               "3-back" = "black")) +
+  labs(title = "",
+       x = "",
+       y = "d' score") +
+  theme(
+    text = element_text(family = "Times New Roman"),
+    plot.title = element_text(family = "Times New Roman", size = 16, face = "bold"),
+    axis.title = element_text(family = "Times New Roman", size = 12),
+    axis.text = element_text(family = "Times New Roman", size = 10)
+  )
+
+print(p_box)
+
+
+p_box1 <- ggplot(long_df, aes(x = Groups, y = dprime, fill = Condition)) +
+  geom_boxplot(position = position_dodge(width = 0.8)) +
+  labs(title = "Boxplot of d' by Treatment Group",
+       x = "Treatment Group",
+       y = "d'") +
+  theme_minimal()
+
+print(p_box1)
+
+long_df_errors <- df %>%
+  select(Groups, 
+         nBack1FA, nBack2FA, nBack3FA,
+         nBack1MISS, nBack2MISS, nBack3MISS) %>%
+  gather(key = "Measure", value = "Count", -Groups) %>%
+  mutate(
+    Type = ifelse(grepl("FA", Measure), "False Alarm", "Miss"),
+    Level = case_when(
+      grepl("1", Measure) ~ "1-back n = 498",
+      grepl("2", Measure) ~ "2-back n = 464",
+      grepl("3", Measure) ~ "3-back n = 452"
+    )
+  )
+
+# Create boxplot for FA and Misses
+p_errors <- ggplot(long_df_errors, aes(x = Level, y = Count, fill = Type)) +
+  geom_boxplot() +
+  facet_wrap(~Groups) +
+  theme_minimal() +
+  labs(title = "Distribution of False Alarms and Misses by Treatment",
+       x = "n-back Level",
+       y = "Count") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(p_errors)
+
+total_target <- 30  # As defined earlier
+
+long_df_errors_hits <- df %>%
+  select(Groups, 
+         nBack1FA, nBack2FA, nBack3FA,
+         nBack1MISS, nBack2MISS, nBack3MISS) %>%
+  # First calculate hits for each level
+  mutate(
+    nBack1HIT = total_target - nBack1MISS,
+    nBack2HIT = total_target - nBack2MISS,
+    nBack3HIT = total_target - nBack3MISS
+  ) %>%
+  # Gather all measures
+  gather(key = "Measure", value = "Count", 
+         -Groups) %>%
+  mutate(
+    Type = case_when(
+      grepl("FA", Measure) ~ "False Alarm",
+      grepl("MISS", Measure) ~ "Miss",
+      grepl("HIT", Measure) ~ "Hit"
+    ),
+    Level = case_when(
+      grepl("1", Measure) ~ "1-back",
+      grepl("2", Measure) ~ "2-back",
+      grepl("3", Measure) ~ "3-back"
+    )
+  )
+
+# Create boxplot including Hits
+p_errors_hits <- ggplot(long_df_errors_hits, aes(x = Level, y = Count, fill = Type)) +
+  geom_boxplot() +
+  facet_wrap(~Groups) +
+  theme_minimal() +
+  scale_fill_manual(values = c("False Alarm" = "red", "Miss" = "blue", "Hit" = "green")) +
+  labs(title = "Distribution of Hits, False Alarms, and Misses by Treatment",
+       x = "n-back Level",
+       y = "Count") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(p_errors_hits)
+
+# Calculate summary statistics including hits
+summary_stats_with_hits <- long_df_errors_hits %>%
+  group_by(Groups, Level, Type) %>%
+  summarise(
+    Mean = mean(Count, na.rm = TRUE),
+    SD = sd(Count, na.rm = TRUE),
+    Median = median(Count, na.rm = TRUE),
+    .groups = 'drop'
+  )
+
+print(summary_stats_with_hits)
+
+
+long_df <- df %>%
+  select(Groups, 
+         nBack1FA, nBack2FA, nBack3FA,
+         nBack1MISS, nBack2MISS, nBack3MISS) %>%
+  # Calculate hits for each level
+  mutate(
+    nBack1HIT = total_target - nBack1MISS,
+    nBack2HIT = total_target - nBack2MISS,
+    nBack3HIT = total_target - nBack3MISS
+  ) %>%
+  # Gather all response measures into long format
+  gather(key = "MeasureDetail", value = "Count", -Groups) %>%
+  mutate(
+    # Determine the response type (Hit, False Alarm, or Miss)
+    Measure = case_when(
+      grepl("FA", MeasureDetail) ~ "False Alarm",
+      grepl("MISS", MeasureDetail) ~ "Miss",
+      grepl("HIT", MeasureDetail) ~ "Hit"
+    ),
+    # Determine the n-back level
+    Level = case_when(
+      grepl("1", MeasureDetail) ~ "1-back n = 498",
+      grepl("2", MeasureDetail) ~ "2-back n = 464",
+      grepl("3", MeasureDetail) ~ "3-back n = 452"
+    )
+  )
+
+p <- ggplot(long_df, aes(x = Groups, y = Count, fill = Measure)) +
+  geom_boxplot(position = position_dodge(width = 0.8)) +
+  facet_wrap(~ Level, nrow = 1) +
+  scale_fill_manual(values = c("Hit" = "#666666", 
+                               "False Alarm" = "#999999", 
+                               "Miss" = "#CCCCCC")) +
+  labs(title = "",
+       x = "",
+       y = "Number of responses") +
+  theme_minimal(base_size = 14) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "bottom",
+    legend.title = element_blank(),
+    strip.text = element_text(face = "bold")
+  )
+
+print(p)
+
+# Export plot as PDF file for high-quality vector graphics
+ggsave(filename = "response_patterns_figure.pdf", plot = p, width = 10, height = 6, device = cairo_pdf)
+
+
+```
+
+## OLS - ATE, average number of calories + Working memory test as an interaction term 
+
+The working memory test consists of three blocks (1-, 2-, and 3-back) of 90 trials each. Participants complete three blocks of 30 trials each of 1- and 2-back sequences, without a sound to signify a correct response.
+
+Relevel categories in R: https://www.youtube.com/watch?app=desktop&v=XJw6xdBYG7c&t=61s
+
+Stargazer: https://cran.r-project.org/web/packages/stargazer/vignettes/stargazer.pdf
+
+```{r int, echo=FALSE}
+
+library(texreg)
+
+#OLS for number of calories on average
+
+ols_model <- lm(CalorieTotal ~ Groups, data = df)
+predicted_valuesOLS <- predict(ols_model,df)
+df$predicted_ols <- predicted_valuesOLS
+ggplot(df, aes(x=Groups, y=predicted_ols, color=Groups)) +
+  geom_boxplot() +
+  labs(title="Average number of calories by Treatment, OLS Model 0", x="Treatment", y="Av. number of calories")
+
+ols_model10 <- lm(CalorieTotal ~ Groups*dprime1, data = df)
+summary(ols_model10)
+
+ols_model11 <- lm(CalorieTotal ~ Groups*dprime2, data = df)
+summary(ols_model11)
+
+ols_model12 <- lm(CalorieTotal ~ Groups*dprime3, data = df)
+summary(ols_model12)
+
+# Generate a table comparing the models  
+screenreg(list(ols_model, ols_model10, ols_model11, ols_model12))  
+
+
+Absent <- 400.098
+Detailed <- 400.098 - 3.358
+Coarse <- 400.098 - 5.577
+
+Absent_Coarse <- ((Absent-Coarse)/Coarse)*100
+Absent_Detailed <- ((Absent-Detailed)/Detailed)*100
+
+
+library(effects)
+
+# Plot the interaction effect:
+plot(allEffects(ols_model10))
+plot(allEffects(ols_model11))
+plot(allEffects(ols_model12))
+
+
+```
+
+## Merging choice data sets by treatment groups
+
+Same specification than before.
+
+```{r logit, echo=FALSE}
+
+library(tidyr)
+library(dplyr)
+library(readxl)
+
+#selecting columns Coarse
+
+
+dflogitnolabels <-  df %>%
+  select(
+    `Response ID` = `Response ID`,
+    35:50,  # Choice task columns
+    103:110, #calorie preferences
+    126, 131, 136, 141, # additional shopping behavior children at home
+    146, 195, 193, 194, 196, 125, # Additional demographic sex, age range, ethnicity, education level
+    186, # choice task response time
+    212, 221, 230, # working memory
+    223, #new dprime3_20hits
+    226, # new dprime3_10hits
+    Groups
+  )
+
+#transpose data
+
+dflogitlong_data <- dflogitnolabels %>%
+  pivot_longer(
+    cols = 2:17,
+    names_to = "Choice",
+    values_to = "CerealSelected"
+    )
+
+
+dflogitlong_data <- subset(dflogitlong_data, Groups == "Absent")
+
+#selecting columns Coarse
+
+
+dflogitcoarse  <-  df %>%
+  select(
+    `Response ID` = `Response ID`,
+    53:68,  # Choice task columns
+    103:110, #calorie preferences
+    126, 131, 136, 141, # additional shopping behavior children at home
+    146, 195, 193, 194, 196, 125, # Additional demographic sex, age range, ethnicity, education level
+    186, # choice task response time
+    212, 221, 230, # working memory
+    223, #new dprime3_20hits
+    226, # new dprime3_10hits
+    Groups
+  )
+
+#transpose data
+
+dflogitlong_data2 <- dflogitcoarse %>%
+  pivot_longer(
+    cols = 2:17,
+    names_to = "Choice",
+    values_to = "CerealSelected"
+    )
+
+# Sort by ID to make it easier to read
+dflogitlong_data2 <- dflogitlong_data2 %>%
+  arrange(`Response ID`)
+
+dflogitlong_data2 <- subset(dflogitlong_data2, Groups == "Coarse")
+
+#selecting columns Detailed
+
+dflogitdetailed  <-  df %>%
+  select(
+    `Response ID` = `Response ID`,
+    72:87,  # Choice task columns
+    103:110, #calorie preferences
+    126, 131, 136, 141, # additional shopping behavior children at home
+    146, 195, 193, 194, 196, 125, # Additional demographic sex, age range, ethnicity, education level
+    186, # choice task response time
+    212, 221, 230, # working memory
+    223, #new dprime3_20hits
+    226, # new dprime3_10hits
+    Groups
+  )
+
+#transpose data
+
+dflogitlong_data3 <- dflogitdetailed %>%
+  pivot_longer(
+    cols = 2:17,
+    names_to = "Choice",
+    values_to = "CerealSelected"
+    )
+
+# Sort by ID to make it easier to read
+dflogitlong_data3 <- dflogitlong_data3 %>%
+  arrange(`Response ID`)
+
+dflogitlong_data3 <- subset(dflogitlong_data3, Groups == "Detailed")
+
+#Merge datasets
+
+#using merge
+
+merged_df <- rbind(dflogitlong_data, dflogitlong_data2, dflogitlong_data3)
+
+#calculating n
+
+sum(!is.na(merged_df$dprime1))
+sum(!is.na(merged_df$dprime2))
+sum(!is.na(merged_df$dprime3))
+sum(!is.na(merged_df$dprime3_20hits))
+sum(!is.na(merged_df$dprime3_10hits))
+
+
+```
+
+## Multilevel log-binomial regression Lmer - ATE, number of calories 
+
+
+```{r multical, echo=FALSE}
+library(texreg)
+library(Matrix)
+library(lme4)
+
+
+# First, let's verify the variable is numeric and see its distribution
+merged_df$CerealSelected <- as.numeric(merged_df$CerealSelected)
+
+continuous <- lmer(CerealSelected ~ Groups + (1 | `Response ID`), 
+                        data = merged_df)
+# Fit the linear mixed model
+continuous_model1 <- lmer(CerealSelected ~ Groups*dprime1 + (1 | `Response ID`), 
+                        data = merged_df)
+continuous_model2 <- lmer(CerealSelected ~ Groups*dprime2 + (1 | `Response ID`), 
+                        data = merged_df)
+continuous_model3 <- lmer(CerealSelected ~ Groups*dprime3 + (1 | `Response ID`), 
+                        data = merged_df)
+screenreg(list(continuous, continuous_model1, continuous_model2, continuous_model3))
+
+
+
+```
+
+## Multilevel log-binomial regression Lmer - ATE, number of calories + Prefences + Trails (for publication)
+
+We checked multicolianearity, low colineariy without taking into account the interactions terms. But geeting fixed-effect model matrix is rank deficient so dropping 1 column / coefficient
+I did not include preference for cereal 5, and the error dissapeared
+
+How to plot interactions: https://cran.r-project.org/web/packages/interactions/vignettes/interactions.html
+
+subset_20hits <- df[df$hit2 >= 20, ] # Create a subset of participants who got at least 20 hits in 2-back
+sum(!is.na(subset_20hits$hit3))
+
+
+
+```{r multical1, echo=FALSE}
+
+# Load required libraries
+library(effects)
+library(lattice)
+library(gridExtra)
+library(lme4)
+library(texreg)
+
+#library(ggpubr)
+#ggarrange(weeds.bar.species, weeds.bar.soil, ncol = 2, nrow = 1)
+
+# Fit the linear mixed model
+
+colnames(merged_df)[c(2, 3, 4, 5, 6, 7, 8, 9)] <- c("r1", "r2", "r3", "r4","r5","r6","r7", "r8")
+
+merged_df$Trials <- rep(1:16, length.out = nrow(merged_df))
+
+c1 <- lmer(as.numeric(CerealSelected) ~ Groups + (1 | `Response ID`), data = merged_df, na.action = na.exclude)
+c2 <- lmer(as.numeric(CerealSelected) ~ Groups + Trials + (1 | `Response ID`), data = merged_df, na.action = na.exclude)
+c3 <- lmer(as.numeric(CerealSelected) ~ Groups +  Trials + r1 + r2 + r3 + r4+ r6+ r7+ r8 + (1 | `Response ID`), data = merged_df, na.action = na.exclude)
+c4 <- lmer(as.numeric(CerealSelected)~ Groups*dprime1  + Trials + r1 + r2 + r3 + r4+ r6+ r7+ r8 + (1 | `Response ID`), data = merged_df, na.action = na.exclude)
+c5 <- lmer(as.numeric(CerealSelected) ~ Groups*dprime2 + Trials + r1 + r2 + r3 + r4+ r6+ r7+ r8 +  (1 | `Response ID`), data = merged_df, na.action = na.exclude)
+c6 <- lmer(as.numeric(CerealSelected) ~ Groups*dprime3  + Trials + r1 + r2 + r3 + r4+ r6+ r7+ r8 +  (1 | `Response ID`), data = merged_df, na.action = na.exclude)
+
+screenreg(list(c1,c2,c3,c4,c5,c6))
+
+library(performance)  
+  # Check collinearity for the mixed-effects model directly  
+print(check_collinearity(c2)) #nocollineary, this is not the problem
+
+library(performance)  
+  # Check collinearity for the mixed-effects model directly  
+print(check_collinearity(c3)) #nocollineary, this is not the problem
+
+library(performance)  
+  # Check collinearity for the mixed-effects model directly  
+print(check_collinearity(c4)) #nocollineary, this is not the problem
+
+library(performance)  
+  # Check collinearity for the mixed-effects model directly  
+print(check_collinearity(c5)) #nocollineary, this is not the problem
+
+library(performance)  
+  # Check collinearity for the mixed-effects model directly  
+print(check_collinearity(c6)) #nocollineary, this is not the problem
+
+#htmlreg(  
+  #list(c1,c2,c3,c4,c5,c6),  
+  #file = "Lmer_regression_results.html",  
+  #single.row = TRUE,  
+  #custom.model.names = c("Model 1", "Model 2", "Model 3", "Model 4",  
+                         #"Model 5", "Model 6"))  
+
+latex_output <- capture.output(  
+    texreg(list(c1, c2, c3, c4, c5, c6),  
+           caption = "Regression Results",  
+           label = "tab:regression",  
+           booktabs = TRUE,  
+           dcolumn = TRUE,  
+           use.packages = TRUE,  
+           float.pos = "h!",  
+           stars = c(0.01, 0.05, 0.1),  # Customize significance stars  
+           custom.model.names = c("Model 1", "Model 2", "Model 3",   
+                                "Model 4", "Model 5", "Model 6"),  
+           digits = 2)  # Number of decimal places  
+)  
+  
+# Print the LaTeX code  
+cat(paste(latex_output, collapse = "\n"))  
+
+
+```
+
+## Multilevel log-binomial regression Lmer - ATE, number of calories + Prefences + Trails PLOTS
+
+
+```{r mutiplot, echo=FALSE}
+
+merged_df$predicted4 <- predict(c4)
+
+
+# Box plot of model-predicted values by Groups (grayscale)
+multi1 <- ggplot(merged_df, aes(x = Groups, y = predicted4, fill = Groups)) +
+  geom_boxplot(alpha = 0.5, outlier.shape = NA) +
+  scale_fill_grey(start = 0.7, end = 0.3) +
+  coord_cartesian(ylim = c(0, 500)) +
+  theme_minimal() +
+  labs(title = "Distribution of Model-Predicted Cereal Selection by Groups",
+       x = "",
+       y = "Calorie counts") +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1), legend.position = "none")
+
+multi1
+
+merged_df$predicted5 <- predict(c5)
+
+
+# Box plot of model-predicted values by Groups (grayscale)
+multi2 <- ggplot(merged_df, aes(x = Groups, y = predicted5, fill = Groups)) +
+  geom_boxplot(alpha = 0.5, outlier.shape = NA) +
+  scale_fill_grey(start = 0.7, end = 0.3) +
+  coord_cartesian(ylim = c(0, 500)) +
+  theme_minimal() +
+  labs(title = "Distribution of Model-Predicted Cereal Selection by Groups",
+       x = "",
+       y = "Calorie counts") +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1), legend.position = "none")
+
+multi2
+
+merged_df$predicted6 <- predict(c6)
+
+
+# Box plot of model-predicted values by Groups (grayscale)
+multi3 <- ggplot(merged_df, aes(x = Groups, y = predicted6, fill = Groups)) +
+  geom_boxplot(alpha = 0.5, outlier.shape = NA) +
+  scale_fill_grey(start = 0.7, end = 0.3) +
+  coord_cartesian(ylim = c(0, 500)) +
+  theme_minimal() +
+  labs(title = "Distribution of Model-Predicted Cereal Selection by Groups",
+       x = "",
+       y = "Calorie counts") +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1), legend.position = "none")
+
+  multi3
+
+combined_plot_calorie <- arrangeGrob(multi1, multi2, multi3, ncol = 3)
+
+# Save the plot
+ggsave("combined_plot_calorie.png", combined_plot0, width = 12, height = 4, dpi = 300)
+
+
+# Summarize predicted values by group
+library(dplyr)
+pred_summary <- merged_df %>%
+  group_by(Groups) %>%
+  summarise(
+    mean_pred = mean(predicted4, na.rm = TRUE),
+    se_pred = sd(predicted4, na.rm = TRUE) / sqrt(n())
+  )
+
+cal1 <- ggplot(pred_summary, aes(x = Groups, y = mean_pred, fill = Groups)) +
+  geom_bar(stat = "identity", color = "black", width = 0.6) +
+  geom_errorbar(aes(ymin = mean_pred - se_pred, ymax = mean_pred + se_pred), width = 0.2) +
+  scale_fill_grey(start = 0.7, end = 0.3) +
+  coord_cartesian(ylim = c(0, 500)) + 
+  theme_minimal() +
+  labs(title = "1-Back",
+       x = "",
+       y = "Calories") +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1), 
+        legend.position = "none")
+
+# Summarize predicted values by group
+library(dplyr)
+pred_summary1 <- merged_df %>%
+  group_by(Groups) %>%
+  summarise(
+    mean_pred = mean(predicted5, na.rm = TRUE),
+    se_pred = sd(predicted5, na.rm = TRUE) / sqrt(n())
+  )
+
+cal2 <- ggplot(pred_summary1, aes(x = Groups, y = mean_pred, fill = Groups)) +
+  geom_bar(stat = "identity", color = "black", width = 0.6) +
+  geom_errorbar(aes(ymin = mean_pred - se_pred, ymax = mean_pred + se_pred), width = 0.2) +
+  scale_fill_grey(start = 0.7, end = 0.3) +
+  coord_cartesian(ylim = c(0, 500)) + 
+  theme_minimal() +
+  labs(title = "2-Back",
+       x = "",
+       y = "Calories") +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1), 
+        legend.position = "none")
+
+# Summarize predicted values by group
+library(dplyr)
+pred_summary2 <- merged_df %>%
+  group_by(Groups) %>%
+  summarise(
+    mean_pred = mean(predicted6, na.rm = TRUE),
+    se_pred = sd(predicted6, na.rm = TRUE) / sqrt(n())
+  )
+
+cal3 <- ggplot(pred_summary2, aes(x = Groups, y = mean_pred, fill = Groups)) +
+  geom_bar(stat = "identity", color = "black", width = 0.6) +
+  geom_errorbar(aes(ymin = mean_pred - se_pred, ymax = mean_pred + se_pred), width = 0.2) +
+  scale_fill_grey(start = 0.7, end = 0.3) +
+  coord_cartesian(ylim = c(0, 500)) + 
+  theme_minimal() +
+  labs(title = "3-Back",
+       x = "",
+       y = "Calories") +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1), 
+        legend.position = "none")
+
+combined_plot_caloriev2 <- arrangeGrob(cal1, cal2, cal3, ncol = 3)
+
+# Save the plot
+ggsave("combined_plot_caloriev2.png", combined_plot0, width = 12, height = 4, dpi = 300)
+
+
+
+
+```
+
+## Multilevel log-binomial regression Lmer - ATE, number of calories + Prefences ranking + Trails 
+
+nothing is significant
+
+```{r ranking, echo=FALSE}
+
+# Create the ranking variable  
+merged_df$RankingOfSelectedCereal <- NA  
+  
+# Define the vector of cereal calorie values that correspond to the healthiness columns  
+cereals <- c(360, 374, 392, 398, 423, 431, 453, 470)  
+  
+# Loop over each row to assign the ranking for the selected cereal  
+for(i in 1:nrow(merged_df)) {  
+  selected_cereal <- merged_df$CerealSelected[i]  
+    
+  # If none option is selected, assign 0 preference  
+  if(selected_cereal == "none" || is.na(selected_cereal)) {  
+    merged_df$RankingOfSelectedCereal[i] <- 0  
+  } else {  
+    # Convert to numeric for matching with cereals vector  
+    selected_cereal <- as.numeric(selected_cereal)  
+    index <- match(selected_cereal, cereals)  
+    if(!is.na(index)) {  
+      ranking_col <- paste0("Cereal healthiness", index)  
+      merged_df$RankingOfSelectedCereal[i] <- merged_df[[ranking_col]][i]  
+    }  
+  }  
+}   
+
+# Updated model using the ranking of the selected cereal  
+c7 <- lmer(as.numeric(CerealSelected) ~   
+                   Groups * dprime1 +   
+                   RankingOfSelectedCereal +  # This is now meaningful for each choice  
+                   Trials +   
+                   (1 | `Response ID`),   
+                   data = merged_df)  
+
+# Updated model using the ranking of the selected cereal  
+c8 <- lmer(as.numeric(CerealSelected) ~   
+                   Groups * dprime2 +   
+                   RankingOfSelectedCereal +  # This is now meaningful for each choice  
+                   Trials +   
+                   (1 | `Response ID`),   
+                   data = merged_df)   
+  
+# Updated model using the ranking of the selected cereal  
+c9 <- lmer(as.numeric(CerealSelected) ~   
+                   Groups * dprime3 +    
+                   RankingOfSelectedCereal +  # This is now meaningful for each choice  
+                   Trials +   
+                   (1 | `Response ID`),   
+                   data = merged_df)    
+
+screenreg(list(c7, c8, c9))
+
+
+```
+
+
+
+
+## Multilevel log-binomial regression Lmer - ATE, number of calories + covariates PLOTS
+
+How to plot interactions: https://cran.r-project.org/web/packages/interactions/vignettes/interactions.html
+
+subset_20hits <- df[df$hit2 >= 20, ] # Create a subset of participants who got at least 20 hits in 2-back
+sum(!is.na(subset_20hits$hit3))
+
+
+```{r plots2, echo=FALSE}
+
+library(effects)
+library(gridExtra)
+library(grid)
+library(ggplot2)
+
+group_colors <- c("Absent" = "black", "Coarse" = "blue", "Detailed" = "red")
+
+merged_df$pred_c4 <- predict(c4, re.form = NA)
+
+e1 <- ggplot(merged_df, aes(x = Groups, y = pred_c4, fill = Groups)) +
+  geom_boxplot(alpha = 0.6) +
+  labs(title = "1-back n = 498",
+       x = "",
+       y = "Calorie counts") +
+  scale_y_continuous(limits = c(200, 450)) +
+  scale_x_discrete(labels = c("Absent", "Coarse", "Detailed")) +
+  scale_fill_manual(values = group_colors) +
+  theme_minimal() +
+  theme(legend.position = "none",
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5))
+  
+merged_df$pred_c5 <- predict(c5, re.form = NA)
+
+e2 <- ggplot(merged_df, aes(x = Groups, y = pred_c5, fill = Groups)) +
+  geom_boxplot(alpha = 0.6) +
+  labs(title = "2-back n = 464",
+       x = "",
+       y = "Calorie counts") +
+  scale_y_continuous(limits = c(200, 450)) +
+  scale_x_discrete(labels = c("Absent", "Coarse", "Detailed")) +
+  scale_fill_manual(values = group_colors) +
+  theme_minimal() +
+  theme(legend.position = "none",
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5))
+  
+
+merged_df$pred_c6 <- predict(c6, re.form = NA)
+
+e3 <- ggplot(merged_df, aes(x = Groups, y = pred_c6, fill = Groups)) +
+  geom_boxplot(alpha = 0.6) +
+  labs(title = "3-back n = 452",
+       x = "",
+       y = "Calorie counts") +
+  scale_y_continuous(limits = c(200, 450)) +
+  scale_x_discrete(labels = c("", "", "")) +
+  scale_fill_manual(values = group_colors) +
+  theme_minimal() +
+ theme(legend.position = "none",
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5),
+        axis.line = element_line(color = "black"),
+        axis.line.x = element_line(color = "black"),
+        axis.line.y = element_line(color = "black"))
+
+  
+e1
+e2
+e3
+
+combined_plot0 <- arrangeGrob(e1, e2, e3, ncol = 3)
+
+# Save the plot
+ggsave("combined_model.png", combined_plot0, width = 12, height = 4, dpi = 300)
+
+print("Combined plot has been saved as combined_model.png")
+
+#Plots
+
+plot(effect("Groups*dprime1", c4), multiline = TRUE)
+plot(effect("Groups*dprime2", c5), multiline = TRUE)
+plot(effect("Groups*dprime3", c6), multiline = TRUE)
+
+
+# Plot 1
+p1 <- plot(effect("Groups*dprime1", c4), 
+     main = "",
+     xlab = "1-back",
+     ylab = "Calorie counts",
+     lines = list(multiline = TRUE, col = c("black", "blue", "red")),
+     ci.style = "bands",
+     rug = FALSE,
+     grid = FALSE, 
+     xlim = c(2, -15),
+     ylim = c(200, 450))
+
+p1
+
+# Plot 2
+p2 <- plot(effect("Groups*dprime2", c5), 
+     main = "",
+     xlab = "2-back",
+     ylab = "Calorie counts",
+     lines = list(multiline = TRUE, col = c("black", "blue", "red")),
+     ci.style = "bands",
+     rug = FALSE,
+     grid = FALSE, 
+     xlim = c(2, -15),
+     ylim = c(200, 450))
+
+p2
+
+# Plot 3
+p3 <- plot(effect("Groups*dprime3", c6), 
+     main = "",
+     xlab = "3-back",
+     ylab = "Calorie counts",
+     lines = list(multiline = TRUE, col = c("black", "blue", "red")),
+     ci.style = "bands",
+     rug = FALSE,
+     grid = FALSE, 
+     xlim = c(2, -15),
+     ylim = c(200, 450))
+
+p3
+
+# Add a shared legend at the bottom
+grid.text("Groups: Black = Label Absent, Blue = Coarse Label, Red = Detailed Label", 
+          x = 0.5, y = 0.02, 
+          just = "center",
+          gp = gpar(fontsize = 10))
+
+combined_plot <- arrangeGrob(p1, p2, p3, ncol = 3)
+
+# Save the plot
+ggsave("combined_nback_effects.png", combined_plot, width = 12, height = 4, dpi = 300)
+
+print("Combined plot has been saved as combined_nback_effects.png")
+
+```
+
+## Multilevel log-binomial regression Lmer - Sensitivity analysis
+
+
+```{r sensi, echo=FALSE}
+
+ # Add Product 4 preference as a fixed effect  
+
+ c5_se <- lmer(as.numeric(CerealSelected) ~ Groups*dprime1 + `Cereal healthiness4` +   
+            (1 | `Response ID`), data = merged_df, na.action = na.exclude)  
+
+   
+ # With interaction to see if label effects differ by Product 4 preference  
+ c6_se <- lmer(as.numeric(CerealSelected) ~ Groups*dprime1 + Groups*`Cereal healthiness4` +   
+            (1 | `Response ID`), data = merged_df, na.action = na.exclude) 
+
+ c7_se <- lmer(as.numeric(CerealSelected) ~ Groups*dprime2 + `Cereal healthiness4` +   
+            (1 | `Response ID`), data = merged_df, na.action = na.exclude)  
+
+   
+ # With interaction to see if label effects differ by Product 4 preference  
+ c8_se <- lmer(as.numeric(CerealSelected) ~ Groups*dprime2 + Groups*`Cereal healthiness4` +   
+            (1 | `Response ID`), data = merged_df, na.action = na.exclude) 
+
+ c9_se <- lmer(as.numeric(CerealSelected) ~ Groups*dprime3 + `Cereal healthiness4` +   
+            (1 | `Response ID`), data = merged_df, na.action = na.exclude)  
+
+  # With interaction to see if label effects differ by Product 4 preference  
+ c10_se <- lmer(as.numeric(CerealSelected) ~ Groups*dprime3 + Groups*`Cereal healthiness4` +   
+            (1 | `Response ID`), data = merged_df, na.action = na.exclude) 
+
+   
+ stargazer(c5_se, c6_se, c7_se,c8_se,c9_se,c10_se, title="Multilevel log-binomial regression", type="text")
+
+
+  # Add Product 4 preference as a fixed effect  
+
+ c11_se <- lmer(as.numeric(CerealSelected) ~ Groups*dprime1 + `Cereal healthiness6` +   
+            (1 | `Response ID`), data = merged_df, na.action = na.exclude)  
+
+   
+ # With interaction to see if label effects differ by Product 4 preference  
+ c12_se <- lmer(as.numeric(CerealSelected) ~ Groups*dprime1 + Groups*`Cereal healthiness6` +   
+            (1 | `Response ID`), data = merged_df, na.action = na.exclude) 
+
+ c13_se <- lmer(as.numeric(CerealSelected) ~ Groups*dprime2 + `Cereal healthiness6` +   
+            (1 | `Response ID`), data = merged_df, na.action = na.exclude)  
+
+   
+ # With interaction to see if label effects differ by Product 4 preference  
+ c14_se <- lmer(as.numeric(CerealSelected) ~ Groups*dprime2 + Groups*`Cereal healthiness6` +   
+            (1 | `Response ID`), data = merged_df, na.action = na.exclude) 
+
+ c15_se <- lmer(as.numeric(CerealSelected) ~ Groups*dprime3 + `Cereal healthiness6` +   
+            (1 | `Response ID`), data = merged_df, na.action = na.exclude)  
+
+  # With interaction to see if label effects differ by Product 4 preference  
+ c16_se <- lmer(as.numeric(CerealSelected) ~ Groups*dprime3 + Groups*`Cereal healthiness6` +   
+            (1 | `Response ID`), data = merged_df, na.action = na.exclude) 
+
+   
+ stargazer(c11_se, c12_se, c13_se,c14_se,c15_se,c16_se, title="Multilevel log-binomial regression", type="text")
+
+
+  # Add Product 8 preference as a fixed effect  
+
+ c17_se <- lmer(as.numeric(CerealSelected) ~ Groups*dprime1 + `Cereal healthiness8` +   
+            (1 | `Response ID`), data = merged_df, na.action = na.exclude)  
+
+   
+ # With interaction to see if label effects differ by Product 4 preference  
+ c18_se <- lmer(as.numeric(CerealSelected) ~ Groups*dprime1 + Groups*`Cereal healthiness8` +   
+            (1 | `Response ID`), data = merged_df, na.action = na.exclude) 
+
+ c19_se <- lmer(as.numeric(CerealSelected) ~ Groups*dprime2 + `Cereal healthiness8` +   
+            (1 | `Response ID`), data = merged_df, na.action = na.exclude)  
+
+   
+ # With interaction to see if label effects differ by Product 4 preference  
+ c20_se <- lmer(as.numeric(CerealSelected) ~ Groups*dprime2 + Groups*`Cereal healthiness8` +   
+            (1 | `Response ID`), data = merged_df, na.action = na.exclude) 
+
+ c21_se <- lmer(as.numeric(CerealSelected) ~ Groups*dprime3 + `Cereal healthiness8` +   
+            (1 | `Response ID`), data = merged_df, na.action = na.exclude)  
+
+  # With interaction to see if label effects differ by Product 4 preference  
+ c22_se <- lmer(as.numeric(CerealSelected) ~ Groups*dprime3 + Groups*`Cereal healthiness8` +   
+            (1 | `Response ID`), data = merged_df, na.action = na.exclude) 
+
+   
+ stargazer(c17_se, c18_se, c19_se,c20_se,c21_se,c22_se, title="Multilevel log-binomial regression", type="text")
+
+ 
+ 
+```
+
+
+## Multilevel log-binomial regression Lmer - ATE, number of calories + covariates + reanalizing 3-back test 20 hits
+
+
+```{r multical1, echo=FALSE}
+
+# Load required libraries
+library(effects)
+library(lattice)
+library(gridExtra)
+
+#library(ggpubr)
+#ggarrange(weeds.bar.species, weeds.bar.soil, ncol = 2, nrow = 1)
+
+
+# Fit the linear mixed model
+
+c44 <- lmer(as.numeric(CerealSelected) ~ Groups*dprime3_20hits + Loseweight + Children + Responsable + (1 | `Response ID`), data = merged_df, na.action = na.exclude)
+c55 <- lmer(as.numeric(CerealSelected) ~ Groups*dprime3_10hits + Loseweight + Children + Responsable + (1 | `Response ID`), data = merged_df, na.action = na.exclude)
+stargazer(c1,c2,c3, c4,c44,c55, title="Multilevel log-binomial regression", type="text")
+
+
+```
+ 
+## OLS - ATE, response time + with and without covariates
+
+Same specification than before.
+
+```{r multitime, echo=FALSE}
+
+# First, let's verify the variable is numeric and see its distribution
+df$`Duration Test (Min)` <- as.numeric(as.character(df$`Duration Test (Min)`))
+
+time0 <- lm(`Duration Test (Min)` ~ Groups, data = df)
+
+
+# Fit the linear mixed model
+time1 <- lm(`Duration Test (Min)` ~ Groups*dprime1, data = df)
+summary(time1)
+time2 <- lm(`Duration Test (Min)` ~ Groups*dprime2, data = df)
+summary(time2)
+time3 <- lm(`Duration Test (Min)` ~ Groups*dprime3, data = df)
+summary(time3)
+
+screenreg(list(time1, time2, time3))
+
+library(effects)
+
+# Plot the interaction effect:
+plot(allEffects(time1))
+plot(allEffects(time2))
+plot(allEffects(time3))
+
+# Fit the linear mixed model + covariates
+
+time0a <- lm(`Duration Test (Min)` ~ Groups*dprime1  + `Cereal healthiness1` + `Cereal healthiness2`+ `Cereal healthiness3`+ `Cereal healthiness4`+ `Cereal healthiness6`+ `Cereal healthiness7`+ `Cereal healthiness8`, data = df)
+time1b <- lm(`Duration Test (Min)`~ Groups*dprime2  + `Cereal healthiness1` + `Cereal healthiness2`+ `Cereal healthiness3`+ `Cereal healthiness4`+ `Cereal healthiness6`+ `Cereal healthiness7`+ `Cereal healthiness8`, data = df)
+time1c <- lm(`Duration Test (Min)`~ Groups*dprime3  + `Cereal healthiness1` + `Cereal healthiness2`+ `Cereal healthiness3`+ `Cereal healthiness4`+ `Cereal healthiness6`+ `Cereal healthiness7`+ `Cereal healthiness8`, data = df)
+
+screenreg(list(time0, time0a, time1b, time1b, time1c))
+
+
+```
+
+## OLS - ATE, Log response time + covariates
+
+
+```{r multitime2, echo=FALSE}
+
+
+df$logtime <- log(df$`Duration Test (Min)`)
+
+time00 <- lm(logtime ~ Groups, data = df)
+time1aa <- lm(logtime~ Groups*dprime1  + `Cereal healthiness1` + `Cereal healthiness2`+ `Cereal healthiness3`+ `Cereal healthiness4`+ `Cereal healthiness6`+ `Cereal healthiness7`+ `Cereal healthiness8`, data = df)
+time2bb <- lm(logtime ~ Groups*dprime2  + `Cereal healthiness1` + `Cereal healthiness2`+ `Cereal healthiness3`+ `Cereal healthiness4`+ `Cereal healthiness6`+ `Cereal healthiness7`+ `Cereal healthiness8`, data = df)
+time3cc <- lm(logtime ~ Groups*dprime3  + `Cereal healthiness1` + `Cereal healthiness2`+ `Cereal healthiness3`+ `Cereal healthiness4`+ `Cereal healthiness6`+ `Cereal healthiness7`+ `Cereal healthiness8`, data = df)
+
+screenreg(list(time00, time1aa, time2bb, time3cc))
+
+latex_output_time <- capture.output(  
+    texreg(list(time00, time1aa, time2bb, time3cc),  
+           caption = "OLS Regression Results",  
+           label = "tab:regression",  
+           booktabs = TRUE,  
+           dcolumn = TRUE,  
+           use.packages = TRUE,  
+           float.pos = "h!",  
+           stars = c(0.01, 0.05, 0.1),  # Customize significance stars  
+           custom.model.names = c("Model 1", "Model 2", "Model 3", "Model 4"),  
+           digits = 2)  # Number of decimal places  
+)  
+  
+# Print the LaTeX code  
+cat(paste(latex_output_time, collapse = "\n"))  
+
+mean(df$`Cereal healthiness1`)
+mean(df$`Cereal healthiness2`)
+mean(df$`Cereal healthiness3`)
+mean(df$`Cereal healthiness4`)
+mean(df$`Cereal healthiness5`)
+mean(df$`Cereal healthiness6`)
+mean(df$`Cereal healthiness7`)
+mean(df$`Cereal healthiness8`)
+
+
+
+```
+
+
+
+## Check variation in the outcome across groups to fit Glmer/Lmer
+
+The Chi-squared test result you got (X-squared = 5.2995, df = 2, p-value = 0.07067) tells us about the relationship between the treatment groups and cereal selection. Let's break this down:
+
+**What the test measures:**
+- Tests whether there's a significant association between group membership (absent/coarse/detailed) and cereal selection (360-calorie selected or not)
+- Null hypothesis (H0): No association between groups and selection
+- Alternative hypothesis (Ha): There is an association
+
+**Your results:**
+- X-squared = 5.2995: The test statistic
+- df = 2: Degrees of freedom (for 3 groups: (3-1) × (2-1) = 2)
+- p-value = 0.07067: The probability value
+
+**Interpretation:**
+- Since p-value (0.07067) > 0.05 (conventional significance level), we fail to reject the null hypothesis
+- However, p < 0.10 suggests a marginal or trending effect
+- This means there's some evidence of differences between groups, but it's not strong enough to meet the conventional 0.05 threshold
+
+**What this means for your study:**
+1. There's some variation across groups (as evidenced by the trending p-value)
+2. The differences between groups are subtle rather than dramatic
+3. This supports using a more sophisticated analysis (like your GLMER) which can:
+   - Account for individual differences
+   - Include additional predictors
+   - Model interactions
+   - Handle repeated measures
+
+```{r variation, echo=FALSE}
+
+
+# 1. Create a contingency table of Groups by cereal360_selected  
+print("Contingency table of cereal selection by group:")  
+group_outcome_table <- table(merged_df_clean$Groups, merged_df_clean$cereal360_selected)  
+print(group_outcome_table)  
+  
+# 2. Calculate proportions within each group  
+print("\nProportions within each group:")  
+prop_table <- prop.table(group_outcome_table, margin = 1) * 100  # margin=1 for row percentages  
+print(prop_table)  
+  
+# 3. Chi-square test for independence  
+print("\nChi-square test of independence:")  
+chisq_test <- chisq.test(group_outcome_table)  
+print(chisq_test)  
+  
+# 4. Visual check with a bar plot  
+library(ggplot2)  
+ggplot(merged_df_clean, aes(x = Groups, fill = factor(cereal360_selected))) +  
+  geom_bar(position = "fill") +  
+  labs(y = "Proportion",   
+       title = "Proportion of Cereal Selection by Group",  
+       fill = "360-calorie Selected") +  
+  theme_minimal()  
+
+```
+
+
+## Generalized logit mixed-effects or Multilevel Glmer - ATE, probability of selecting a product + dprime3 + Trial specification
+
+Redo table 6 by including a specification that takes into account only trials that include the cereal brand to be predicted. I splited the datasets to take into account the specific trails. Otherwise, the regression is based on a database with many zeros, which may affect the results. In addition, it takes into account only those number of observations for the cereal of interest, which reduces the number of observations by half. 
+
+I have included preferences for each specific cereal as well.
+
+Options 'Prefer  not to say' were recoded as missing values because the few observations of this variable makes the model to fail in convergence.
+
+After taking all these details the model fit works better. Model 0 does not include preferences.
+
+```{r multilogit4, echo=FALSE}
+
+
+# Create a new column that cycles through 1 to 16 for each row
+merged_df$Trials <- rep(1:16, length.out = nrow(merged_df))
+
+ # Write the fixed dataframe to CSV  
+#write.csv(merged_df, "merged_df.csv", row.names = FALSE) 
+
+subset_df360 <- merged_df[merged_df$Trials %in% 9:16, ]
+subset_df374 <- merged_df[merged_df$Trials %in% 1:8, ]
+subset_df392 <- merged_df[merged_df$Trials %in% c(1,2,3,4,9,10,11,12), ]
+subset_df398 <- merged_df[merged_df$Trials %in% c(5,6,7,8,13,14,15,16), ]
+subset_df423 <- merged_df[merged_df$Trials %in% c(1,2,5,6,9,10,13,14), ]
+subset_df431 <- merged_df[merged_df$Trials %in% c(1,3,5,7,9,11,13,15), ]
+subset_df453 <- merged_df[merged_df$Trials %in% c(3,4,7,8,11,12,15,16), ]
+subset_df470 <- merged_df[merged_df$Trials %in% c(2,4,6,8,10,12,14,16), ]
+
+control = glmerControl(optimizer = "Nelder_Mead",   
+                       optCtrl = list(maxfun = 100000),  
+                       tolPwrss = 1e-4,  # Default is usually 1e-7  
+                       check.conv.grad = .makeCC("warning", tol = 0.05, relTol = NULL))  # Increase tolerance to 0.05  
+
+t1 <- glmer(CerealSelected == 0 ~ Groups * dprime3 + (1 | `Response ID`),
+                family = binomial("logit"), 
+                data = merged_df)
+
+t2 <- glmer(CerealSelected == 360 ~ Groups * dprime3 + `Cereal healthiness1` + (1 | `Response ID`),
+                family = binomial("logit"), 
+                data = subset_df360)
+summary(t2)
+
+t3 <- glmer(CerealSelected == 374 ~ Groups * dprime3 + `Cereal healthiness2` + (1 | `Response ID`),
+                family = binomial("logit"), 
+                data = subset_df374)
+
+t4 <- glmer(CerealSelected == 392 ~ Groups * dprime3 +  `Cereal healthiness3` + (1 | `Response ID`),
+                family = binomial("logit"), 
+                data = subset_df392)
+
+t5 <- glmer(CerealSelected == 398 ~ Groups * dprime3  + `Cereal healthiness4` + (1 | `Response ID`),
+                family = binomial("logit"), 
+                data = subset_df398)
+
+t6 <- glmer(CerealSelected == 423 ~ Groups * dprime3  + `Cereal healthiness5` + (1 | `Response ID`),
+                family = binomial("logit"), 
+                data = subset_df423)
+
+t7 <- glmer(CerealSelected == 431 ~ Groups * dprime3 + `Cereal healthiness6` + (1 | `Response ID`),
+                family = binomial("logit"), 
+                data = subset_df431)
+
+t8 <- glmer(CerealSelected == 453 ~ Groups * dprime3 + `Cereal healthiness7` + (1 | `Response ID`),
+                family = binomial("logit"), 
+                data = subset_df453)
+
+t9 <- glmer(CerealSelected == 470 ~ Groups * dprime3  + `Cereal healthiness8` + (1 | `Response ID`),
+                family = binomial("logit"), 
+                data = subset_df470)
+
+screenreg(list(t1, t2, t3, t4, t5, t6, t7, t8, t9))
+
+
+
+```
+
+
+## Converge issue - different optimizer and increased iterations (bobyqa)
+
+The previous model was based on a sub sample that included the trials of interest (For example, for Cereal A 360). But the sub sample means that the observations decreased by half. NOw, I fir a model considering the full sample. I identified the trials where the Cereal A 360 (the probability to be estimated) is included (9 to 16). This represents 3985 observations, and amog these observations, 1348 represent the selection of Cereal A, 34%. This model explains the probability of selecting cereal A across all trials where the model controls for the present of Cereal A.
+
+I have got problem with converge, I have rescale dprime3, but I am getting this issue. I have checked collinearity among predictor without interaction term, no collinearity. Rescale the dprime 3 did not work, and I dont want to do it because it z values, I am mot confident to rescale, but I have scale healthiness. Finally, the model fits well when I have included different optimizer and increased iterations (bobyqa). 
+
+
+
+```{r converge, echo=FALSE}
+
+merged_df <- merged_df %>%  
+  mutate(  
+    # Set indicator for trials 9-16 using existing Trials column  
+    cereal360_available = ifelse(Trials >= 9 & Trials <= 16, 1, 0),  
+    # Binary outcome for 360-calorie cereal selection  
+    cereal360_selected = ifelse(CerealSelected == 360, 1, 0)  
+  )  
+
+table(merged_df$Trials, merged_df$CerealSelected)
+table(merged_df$Trials, merged_df$cereal360_available)
+table(merged_df$Trials, merged_df$cereal360_selected)
+
+converge <- glmer(cereal360_selected ~ Groups + `Cereal healthiness1` + cereal360_available +  (1 | `Response ID`),
+                family = binomial("logit"), 
+                data = merged_df_clean)
+summary(converge)
+
+
+library(performance)  
+  # Check collinearity for the mixed-effects model directly  
+print(check_collinearity(t22)) #nocollineary, this is not the problem
+
+#Not including missing values and scale healthiness preferences
+print(sum(is.na(merged_df$dprime3))) 
+
+merged_df_clean <- merged_df %>%  
+  filter(!is.na(dprime3)) %>%  
+  mutate(  
+    healthiness_scaled = scale(`Cereal healthiness1`)  
+  ) 
+
+converge1 <- glmer(cereal360_selected ~ Groups*dprime3 + healthiness_scaled + cereal360_available +  (1 | `Response ID`),
+                family = binomial("logit"), 
+                data = merged_df_clean)
+summary(converge1) # I am still getting problems with converge
+
+#Not including missing values, scale healthiness, change optimazer and more iterations according to Julius
+
+converge2 <- glmer(cereal360_selected ~ Groups*dprime3 + healthiness_scaled + cereal360_available +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df_clean)
+summary(converge2) # FINALLY WORKS
+
+
+converge3 <- glmer(cereal360_selected ~ Groups*dprime3 + healthiness_scaled + cereal360_available +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "Nelder_Mead",  
+                                        optCtrl = list(maxfun = 50000)), 
+                data = merged_df_clean)
+summary(converge3) 
+
+# Run a simple logistic regression model without random effects  
+simple_model <- glm(cereal360_selected ~ Groups*dprime3 + healthiness_scaled + cereal360_available,  
+                    family = binomial("logit"),  
+                    data = merged_df_clean)  
+summary(simple_model) 
+
+# Run a simple logistic regression model without random effects  
+simple_model2 <- glm(cereal360_selected ~ Groups*dprime3 + healthiness_scaled + Trials,  
+                    family = binomial("logit"),  
+                    data = merged_df_clean)  
+summary(simple_model2) 
+
+converge4 <- glmer(cereal360_selected ~ Groups*dprime3 + healthiness_scaled + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "Nelder_Mead",  
+                                        optCtrl = list(maxfun = 50000)), 
+                data = merged_df_clean)
+summary(converge4) 
+
+converge5 <- glmer(cereal360_selected ~ Groups*dprime3 + healthiness_scaled + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df_clean)
+summary(converge5) 
+
+t2v2 <- glmer(CerealSelected == 360 ~ Groups * dprime3 + `Cereal healthiness1` + (1 | `Response ID`),
+                family = binomial("logit"), 
+                data = subset_df360)
+
+screenreg(list(converge, converge1, converge2, converge3, simple_model, simple_model2, converge4, converge5, t2))
+
+
+htmlreg(  
+  list(converge, converge1, converge2, converge3, simple_model, simple_model2, converge4, converge5, t2),  
+  file = "comparison_regression_results.html",  
+  single.row = TRUE,  
+  custom.model.names = c("C.Ava-No d'", "C.Ava", "bobyqa", "Nelder_Mead",  
+                         "C.Ava Logit", "Trials Logit", "Trials Nelder_Mead", "bobyqa_Mead","Subsample")  
+)  
+  
+# Confirmation message  
+print("Comparison regressions table to regression_results.html")  
+
+
+```
+
+## Generalized logit mixed-effects or Multilevel Glmer - ATE, probability of selecting a product + dprime3 + Cereal available as an indicator + bobyqa
+
+I have tried bobyqa as optimazer, it did not work, same problems with convergence.
+
+The previous model was based on a sub sample that included the trials of interest (For example, for Cereal A 360). But the sub sample means that the observations decreased by half. NOw, I fir a model considering the full sample. I identified the trials where the Cereal A 360 (the probability to be estimated) is included (9 to 16). This represents 3985 observations, and amog these observations, 1348 represent the selection of Cereal A, 34%. This model explains the probability of selecting cereal A across all trials where the model controls for the present of Cereal A.
+
+I have got problem with converge, I have rescale dprime3, but I am getting this issue. I have checked collinearity among predictor without interaction term, no collinearity. Rescale the dprime 3 did not work, and I dont want to do it because it z values, I am mot confident to rescale, but I have scale healthiness. Finally, the model fits well when I have included different optimizer and increased iterations (bobyqa). 
+
+
+```{r multilogit5, echo=FALSE}
+
+
+t11 <- glmer(CerealSelected == 0 ~ Groups * dprime3 + healthiness_scaled +  (1 | `Response ID`),
+                family = binomial("logit"), 
+                data = merged_df_clean)
+
+
+merged_df_clean <- merged_df %>%  
+  # Create binary indicators  
+  mutate(  
+    cereal392_available = ifelse(c(1,2,3,4,9,10,11,12), 1, 0),  
+    cereal392_selected = ifelse(CerealSelected == 392, 1, 0)  
+  ) %>%  
+  # Remove NA values from dprime3  
+  filter(!is.na(dprime3)) %>%  
+  # Scale continuous variables  
+  mutate(  
+    dprime3_scaled = scale(dprime3),  
+    healthiness_scaled1 = scale(`Cereal healthiness1`)  
+  )  
+  
+# 2. Fit the model with correct control parameters  
+t392 <- glmer(cereal374_selected ~ Groups * dprime3_scaled +   
+             healthiness_scaled3 + cereal374_available +   
+             (1 | `Response ID`),  
+           family = binomial("logit"),  
+           control = glmerControl(optimizer = "bobyqa",  
+                                optCtrl = list(maxfun = 200000),  
+                                check.conv.grad = .makeCC("warning", tol = 0.005)),  
+           data = merged_df_clean)  
+  
+# 3. Check the summary  
+print(summary(t392)) 
+
+
+```
+## Generalized logit mixed-effects or Multilevel Glmer - ATE, probability of selecting a product + dprime3 + Trial as an indicator for cereal availability + bobyqa
+
+For g0, i did not include preference for cereal 5, for converge issues, but i included all the preferences then. I tested the model with and without the preferences and the coefficient were almost the same, SE stable
+
+```{r back3, echo=FALSE}
+
+library(dplyr)
+
+merged_df <- merged_df %>%  
+  mutate(cereal0_selected = ifelse(CerealSelected == 0, 1, 0)) 
+
+g0 <- glmer(cereal0_selected ~ Groups*dprime3 + `Cereal healthiness1`+ `Cereal healthiness2`+ `Cereal healthiness3`+ `Cereal healthiness4`+ `Cereal healthiness6`+ `Cereal healthiness7` + `Cereal healthiness8`+ Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+merged_df <- merged_df %>%  
+  mutate(cereal360_selected = ifelse(CerealSelected == 360, 1, 0)) 
+
+g360 <- glmer(cereal360_selected ~ Groups*dprime3 + `Cereal healthiness1` + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+merged_df <- merged_df %>%  
+  mutate(cereal374_selected = ifelse(CerealSelected == 374, 1, 0)) 
+
+g374 <- glmer(cereal374_selected ~ Groups*dprime3 + `Cereal healthiness2`+ Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+
+merged_df <- merged_df %>%  
+  mutate(cereal392_selected = ifelse(CerealSelected == 392, 1, 0))  
+
+g392 <- glmer(cereal392_selected ~ Groups*dprime3 + `Cereal healthiness3`+ Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+
+merged_df <- merged_df %>%   
+  mutate(cereal398_selected = ifelse(CerealSelected == 398, 1, 0))  
+
+g398 <- glmer(cereal398_selected ~ Groups*dprime3 + `Cereal healthiness4` + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+merged_df <- merged_df %>%  
+  mutate(cereal423_selected = ifelse(CerealSelected == 423, 1, 0))  
+
+g423 <- glmer(cereal423_selected ~ Groups*dprime3 + `Cereal healthiness5` + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+merged_df <- merged_df %>%   
+  mutate(cereal431_selected = ifelse(CerealSelected == 431, 1, 0))  
+
+g431 <- glmer(cereal431_selected ~ Groups*dprime3 + `Cereal healthiness6` + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+merged_df <- merged_df %>%  
+  mutate(cereal453_selected = ifelse(CerealSelected == 453, 1, 0))  
+
+g453 <- glmer(cereal453_selected ~ Groups*dprime3 + `Cereal healthiness7` + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+merged_df <- merged_df %>%  
+  mutate(cereal470_selected = ifelse(CerealSelected == 470, 1, 0))  
+
+g470 <- glmer(cereal470_selected ~ Groups*dprime3 + `Cereal healthiness8` + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+table(merged_df_clean$CerealSelected, merged_df_clean$Groups)
+
+screenreg(list(g0, g360, g374, g392, g398, g423, g431, g453, g470))
+
+#htmlreg(  
+ # list(g360, g374, g392, g398, g423, g431, g453, g470),  
+  #file = "regression_results.html",  
+  #single.row = TRUE,  
+  #custom.model.names = c("Model 1", "Model 2", "Model 3", "Model 4",  
+                         #"Model 5", "Model 6", "Model 7", "Model 8")  
+#)  
+  
+# Confirmation message  
+#print("Exported regression table to regression_results.html")  
+
+latex_output <- capture.output(  
+    texreg(list(g0, g360, g374, g392, g398, g423, g431, g453, g470),  
+           caption = "Glmer Regression Results",  
+           label = "tab:regression",  
+           booktabs = TRUE,  
+           dcolumn = TRUE,  
+           use.packages = TRUE,  
+           float.pos = "h!",  
+           stars = c(0.01, 0.05, 0.1),  # Customize significance stars  
+           custom.model.names = c("0", "360", "374", "392",   
+                                "398", "423", "431", "453", "470"),  
+           digits = 2)  # Number of decimal places  
+)  
+  
+# Print the LaTeX code  
+cat(paste(latex_output, collapse = "\n"))  
+
+
+
+```
+
+## Generalized logit mixed-effects or Multilevel Glmer - ATE, probability of selecting a product + dprime2 and dprime1 + Trial as an indicator for cereal availability + bobyqa (for publication)
+
+
+```{r back2, echo=FALSE}
+
+g0b <- glmer(cereal0_selected ~ Groups*dprime2 + `Cereal healthiness1`+ `Cereal healthiness2`+ `Cereal healthiness3`+ `Cereal healthiness4`+ `Cereal healthiness6`+ `Cereal healthiness7` + `Cereal healthiness8`+ Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+
+g360b <- glmer(cereal360_selected ~ Groups*dprime2 + `Cereal healthiness1` + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+g374b <- glmer(cereal374_selected ~ Groups*dprime2 + `Cereal healthiness2`+ Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+g392b <- glmer(cereal392_selected ~ Groups*dprime2 + `Cereal healthiness3`+ Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+
+g398b <- glmer(cereal398_selected ~ Groups*dprime2 + `Cereal healthiness4` + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+g423b <- glmer(cereal423_selected ~ Groups*dprime2 + `Cereal healthiness5` + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+
+g431b <- glmer(cereal431_selected ~ Groups*dprime2 + `Cereal healthiness6` + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+
+g453b <- glmer(cereal453_selected ~ Groups*dprime2 + `Cereal healthiness7` + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+g470b <- glmer(cereal470_selected ~ Groups*dprime2 + `Cereal healthiness8` + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+screenreg(list(g0b, g360b, g374b, g392b, g398b, g423b, g431b, g453b, g470b))
+
+
+latex_output3 <- capture.output(  
+    texreg(list(g0b, g360b, g374b, g392b, g398b, g423b, g431b, g453b, g470b),  
+           caption = "Glmer Regression Results 2-back",  
+           label = "tab:regression",  
+           booktabs = TRUE,  
+           dcolumn = TRUE,  
+           use.packages = TRUE,  
+           float.pos = "h!",  
+           stars = c(0.01, 0.05, 0.1),  # Customize significance stars  
+           custom.model.names = c("0", "360", "374", "392",   
+                                "398", "423", "431", "453", "470"),  
+           digits = 2)  # Number of decimal places  
+)  
+  
+# Print the LaTeX code  
+cat(paste(latex_output3, collapse = "\n"))  
+
+g0c <- glmer(cereal0_selected ~ Groups*dprime1 + `Cereal healthiness1`+ `Cereal healthiness2`+ `Cereal healthiness3`+ `Cereal healthiness4`+ `Cereal healthiness6`+ `Cereal healthiness7` + `Cereal healthiness8` + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+g360c <- glmer(cereal360_selected ~ Groups*dprime1 + `Cereal healthiness1` + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+g374c <- glmer(cereal374_selected ~ Groups*dprime1 + `Cereal healthiness2`+ Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+g392c <- glmer(cereal392_selected ~ Groups*dprime1 + `Cereal healthiness3`+ Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+
+g398c <- glmer(cereal398_selected ~ Groups*dprime1 + `Cereal healthiness4` + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+g4231 <- glmer(cereal423_selected ~ Groups*dprime1 + `Cereal healthiness5` + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+
+g431c <- glmer(cereal431_selected ~ Groups*dprime1 + `Cereal healthiness6` + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+
+g453c <- glmer(cereal453_selected ~ Groups*dprime1 + `Cereal healthiness7` + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+g470c <- glmer(cereal470_selected ~ Groups*dprime1 + `Cereal healthiness8` + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+screenreg(list(g0c, g360c, g374c, g392c, g398c, g4231, g431c, g453c, g470c))
+
+table(merged_df$CerealSelected, merged_df$Groups)
+
+latex_output4 <- capture.output(  
+    texreg(list(g0c, g360c, g374c, g392c, g398c, g4231, g431c, g453c, g470c),  
+           caption = "Glmer Regression Results n-back1",  
+           label = "tab:regression",  
+           booktabs = TRUE,  
+           dcolumn = TRUE,  
+           use.packages = TRUE,  
+           float.pos = "h!",  
+           stars = c(0.01, 0.05, 0.1),  # Customize significance stars  
+           custom.model.names = c("0", "360", "374", "392",   
+                                "398", "423", "431", "453", "470"),  
+           digits = 2)  # Number of decimal places  
+)  
+  
+# Print the LaTeX code  
+cat(paste(latex_output4, collapse = "\n"))  
+
+```
+
+## Generalized logit mixed-effects or Multilevel Glmer - ATE, probability of selecting a product + no nback + Trial as an indicator for cereal availability + bobyqa (For publication)
+
+```{r noback, echo=FALSE}
+
+library(texreg)
+
+g0d <- glmer(cereal0_selected ~ Groups + `Cereal healthiness1`+ `Cereal healthiness2`+ `Cereal healthiness3`+ `Cereal healthiness4`+ `Cereal healthiness6`+ `Cereal healthiness7` + `Cereal healthiness8` + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+g360d <- glmer(cereal360_selected ~ Groups + `Cereal healthiness1` + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+g374d <- glmer(cereal374_selected ~ Groups + `Cereal healthiness2`+ Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+g392d <- glmer(cereal392_selected ~ Groups + `Cereal healthiness3`+ Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+
+g398d <- glmer(cereal398_selected ~ Groups + `Cereal healthiness4` + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+g423d <- glmer(cereal423_selected ~ Groups + `Cereal healthiness5` + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+
+g431d <- glmer(cereal431_selected ~ Groups + `Cereal healthiness6` + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+
+g453d <- glmer(cereal453_selected ~ Groups + `Cereal healthiness7` + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+g470d <- glmer(cereal470_selected ~ Groups + `Cereal healthiness8` + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+screenreg(list(g0d, g360d, g374d, g392d, g398d, g423d, g431d, g453d, g470d))
+
+latex_output <- capture.output(  
+    texreg(list(g0d, g360d, g374d, g392d, g398d, g423d, g431d, g453d, g470d),  
+           caption = "Glmer Regression Results 2",  
+           label = "tab:regression",  
+           booktabs = TRUE,  
+           dcolumn = TRUE,  
+           use.packages = TRUE,  
+           float.pos = "h!",  
+           stars = c(0.01, 0.05, 0.1),  # Customize significance stars  
+           custom.model.names = c("0", "360", "374", "392",   
+                                "398", "423", "431", "453", "470"),  
+           digits = 2)  # Number of decimal places  
+)  
+  
+# Print the LaTeX code  
+cat(paste(latex_output, collapse = "\n"))  
+
+
+```
+
+## Generalized logit mixed-effects or Multilevel Glmer - ATE, probability of selecting a product + nback no preferences + Trial as an indicator for cereal availability + bobyqa
+
+```{r nopref, echo=FALSE}
+
+g0e <- glmer(cereal0_selected ~ Groups*dprime3 + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+g360e <- glmer(cereal360_selected ~ Groups*dprime3  + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+g374e <- glmer(cereal374_selected ~ Groups*dprime3 +  Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+g392e <- glmer(cereal392_selected ~ Groups*dprime3 +  Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+
+g398e <- glmer(cereal398_selected ~ Groups*dprime3  + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+g423e <- glmer(cereal423_selected ~ Groups*dprime3  + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+
+g431e <- glmer(cereal431_selected ~ Groups*dprime3 + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+
+g453e <- glmer(cereal453_selected ~ Groups*dprime3 + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+g470e <- glmer(cereal470_selected ~ Groups*dprime3 + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+screenreg(list(g0e, g360e, g374e, g392e, g398e, g423e, g431e, g453e, g470e))
+
+latex_output5 <- capture.output(  
+    texreg(list(g0e, g360e, g374e, g392e, g398e, g423e, g431e, g453e, g470e),  
+           caption = "Glmer Regression Results 2",  
+           label = "tab:regression",  
+           booktabs = TRUE,  
+           dcolumn = TRUE,  
+           use.packages = TRUE,  
+           float.pos = "h!",  
+           stars = c(0.01, 0.05, 0.1),  # Customize significance stars  
+           custom.model.names = c("0", "360", "374", "392",   
+                                "398", "423", "431", "453", "470"),  
+           digits = 2)  # Number of decimal places  
+)  
+  
+# Print the LaTeX code  
+cat(paste(latex_output5, collapse = "\n")) 
+
+g0f <- glmer(cereal0_selected ~ Groups*dprime2 + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+g360f <- glmer(cereal360_selected ~ Groups*dprime2  + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+g374f <- glmer(cereal374_selected ~ Groups*dprime2 +  Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+g392f <- glmer(cereal392_selected ~ Groups*dprime2 +  Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+
+g398f <- glmer(cereal398_selected ~ Groups*dprime2  + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+g423f <- glmer(cereal423_selected ~ Groups*dprime2  + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+
+g431e <- glmer(cereal431_selected ~ Groups*dprime2 + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+
+g453f <- glmer(cereal453_selected ~ Groups*dprime2 + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+g470f <- glmer(cereal470_selected ~ Groups*dprime2 + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = merged_df, 
+                na.action = na.exclude)
+
+screenreg(list(g0f, g360f, g374f, g392f, g398f, g423f, g431f, g453f, g470f))
+
+latex_output6 <- capture.output(  
+    texreg(list(g0f, g360f, g374f, g392f, g398f, g423f, g431f, g453f, g470f),  
+           caption = "Glmer Regression Results 2",  
+           label = "tab:regression",  
+           booktabs = TRUE,  
+           dcolumn = TRUE,  
+           use.packages = TRUE,  
+           float.pos = "h!",  
+           stars = c(0.01, 0.05, 0.1),  # Customize significance stars  
+           custom.model.names = c("0", "360", "374", "392",   
+                                "398", "423", "431", "453", "470"),  
+           digits = 2)  # Number of decimal places  
+)  
+  
+# Print the LaTeX code  
+cat(paste(latex_output6, collapse = "\n"))
+
+
+```
+
+## Multilevel log-binomial regression Lmer  - ATE, Sensitivity analysis, propensity n-back reduction size
+
+1. What is the Propensity to Progress? The “propensity of progressing to the next level” refers to the probability that a participant advances from, say, 1-back to 2-back, or from 2-back to 3-back, given their observed characteristics (e.g., demographics, baseline cognitive ability, group assignment, etc.). This is typically estimated using a logistic regression, where the outcome is whether the participant progressed (1) or not (0). IT DID NOT WORK, FEW MISSING DATA
+
+2. Imputation. Multiple imputation (MI) is a valid and widely accepted methodology for handling missing data in randomized controlled trials (RCTs), including for journals like BMC Public Health. In fact, MI is often recommended by CONSORT guidelines and leading statistical authorities for RCTs, especially when missing data are not negligible and the missingness mechanism is plausibly Missing At Random (MAR). 
+
+```{r sensi1, echo=FALSE}
+
+##MATCHED SAMPLE
+
+complete_cases <- merged_df[!is.na(merged_df$dprime1) & !is.na(merged_df$dprime2) & !is.na(merged_df$dprime3), ]
+
+cc1 <- lmer(as.numeric(CerealSelected) ~ Groups + (1 | `Response ID`), data = complete_cases, na.action = na.exclude)
+cc2 <- lmer(as.numeric(CerealSelected) ~ Groups + Trials + (1 | `Response ID`), data = complete_cases, na.action = na.exclude)
+cc3 <- lmer(as.numeric(CerealSelected) ~ Groups + Trials + `Cereal healthiness1` + `Cereal healthiness2`+ `Cereal healthiness3`+ `Cereal healthiness4`+ `Cereal healthiness6`+ `Cereal healthiness7`+ `Cereal healthiness8` + (1 | `Response ID`), data = complete_cases, na.action = na.exclude)
+cc4 <- lmer(as.numeric(CerealSelected)~ Groups*dprime1  + `Cereal healthiness1` + `Cereal healthiness2`+ `Cereal healthiness3`+ `Cereal healthiness4`+ `Cereal healthiness6`+ `Cereal healthiness7`+ `Cereal healthiness8` + Trials + (1 | `Response ID`), data = complete_cases, na.action = na.exclude)
+cc5 <- lmer(as.numeric(CerealSelected) ~ Groups*dprime2 + `Cereal healthiness1` + `Cereal healthiness2`+ `Cereal healthiness3`+ `Cereal healthiness4`+`Cereal healthiness6`+ `Cereal healthiness7`+ `Cereal healthiness8` + Trials + (1 | `Response ID`), data = complete_cases, na.action = na.exclude)
+cc6 <- lmer(as.numeric(CerealSelected) ~ Groups*dprime3  + `Cereal healthiness1` + `Cereal healthiness2`+ `Cereal healthiness3`+ `Cereal healthiness4`+ `Cereal healthiness6`+ `Cereal healthiness7`+ `Cereal healthiness8` + Trials + (1 | `Response ID`), data = complete_cases, na.action = na.exclude)
+
+screenreg(list(cc1,cc2,cc3,cc4,cc5,cc6))
+
+latex_output_sensi <- capture.output(  
+    texreg(list(cc1,cc2,cc3,cc4,cc5,cc6),  
+           caption = "Regression Results",  
+           label = "tab:regression",  
+           booktabs = TRUE,  
+           dcolumn = TRUE,  
+           use.packages = TRUE,  
+           float.pos = "h!",  
+           stars = c(0.01, 0.05, 0.1),  # Customize significance stars  
+           custom.model.names = c("Model 1", "Model 2", "Model 3",   
+                                "Model 4", "Model 5", "Model 6"),  
+           digits = 2)  # Number of decimal places  
+)  
+  
+# Print the LaTeX code  
+cat(paste(latex_output_sensi, collapse = "\n"))  
+
+
+##PROPENSITY
+
+library(dplyr)
+
+colnames(df)[c(9)] <- c("ID")
+colnames(merged_df)[c(1)] <- c("ID")
+
+# Calculate propensity scores at participant level first
+df <- df %>%
+  group_by(ID) %>%
+  slice(1) %>%  # Take first observation per participant
+  mutate(
+    progressed_to_2back = as.integer(!is.na(dprime2)),
+    progressed_to_3back = as.integer(!is.na(dprime3))
+  ) %>%
+  ungroup()
+
+# Fit the models
+model_2back <- glm(progressed_to_2back ~ Sex + Age2 + Ethnicity_reco + Level_Education2 + Groups + dprime1,
+                   data = df, family = binomial)
+
+model_3back <- glm(progressed_to_3back ~ Sex + Age2 + Ethnicity_reco + Level_Education2 + Groups + dprime2,
+                   data = df, family = binomial)
+
+screenreg(list(model_2back, model_3back))
+
+
+```
+## Generalized logit mixed-effects or Multilevel Glmer - ATE, probability of selecting a product + dprime2 + Trial as an indicator for cereal availability + bobyqa + sensitivity analysis
+
+
+```{r sensi3, echo=FALSE}
+
+library(dplyr)
+
+complete_cases <- complete_cases %>%  
+  mutate(cereal0_selected = ifelse(CerealSelected == 0, 1, 0)) 
+
+gg0 <- glmer(cereal0_selected ~ Groups*dprime2 + `Cereal healthiness1`+ `Cereal healthiness2`+ `Cereal healthiness3`+ `Cereal healthiness4`+ `Cereal healthiness6`+ `Cereal healthiness7` + `Cereal healthiness8`+ Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = complete_cases, 
+                na.action = na.exclude)
+
+complete_cases <- complete_cases %>%  
+  mutate(cereal360_selected = ifelse(CerealSelected == 360, 1, 0)) 
+
+gg360 <- glmer(cereal360_selected ~ Groups*dprime2 + `Cereal healthiness1` + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = complete_cases, 
+                na.action = na.exclude)
+
+complete_cases <- complete_cases %>%  
+  mutate(cereal374_selected = ifelse(CerealSelected == 374, 1, 0)) 
+
+gg374 <- glmer(cereal374_selected ~ Groups*dprime2 + `Cereal healthiness2`+ Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = complete_cases, 
+                na.action = na.exclude)
+
+
+complete_cases <- complete_cases %>%  
+  mutate(cereal392_selected = ifelse(CerealSelected == 392, 1, 0))  
+
+gg392 <- glmer(cereal392_selected ~ Groups*dprime2 + `Cereal healthiness3`+ Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = complete_cases, 
+                na.action = na.exclude)
+
+
+complete_cases <- complete_cases %>%   
+  mutate(cereal398_selected = ifelse(CerealSelected == 398, 1, 0))  
+
+gg398 <- glmer(cereal398_selected ~ Groups*dprime2 + `Cereal healthiness4` + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = complete_cases, 
+                na.action = na.exclude)
+
+complete_cases <- complete_cases %>%  
+  mutate(cereal423_selected = ifelse(CerealSelected == 423, 1, 0))  
+
+gg423 <- glmer(cereal423_selected ~ Groups*dprime2 + `Cereal healthiness5` + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = complete_cases, 
+                na.action = na.exclude)
+
+complete_cases <- complete_cases %>%   
+  mutate(cereal431_selected = ifelse(CerealSelected == 431, 1, 0))  
+
+gg431 <- glmer(cereal431_selected ~ Groups*dprime2 + `Cereal healthiness6` + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = complete_cases, 
+                na.action = na.exclude)
+
+complete_cases <- complete_cases %>%  
+  mutate(cereal453_selected = ifelse(CerealSelected == 453, 1, 0))  
+
+gg453 <- glmer(cereal453_selected ~ Groups*dprime2 + `Cereal healthiness7` + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = complete_cases, 
+                na.action = na.exclude)
+
+complete_cases <- complete_cases %>%  
+  mutate(cereal470_selected = ifelse(CerealSelected == 470, 1, 0))  
+
+gg470 <- glmer(cereal470_selected ~ Groups*dprime2 + `Cereal healthiness8` + Trials +  (1 | `Response ID`),
+                family = binomial("logit"),
+              control = glmerControl(optimizer = "bobyqa",  
+                                     optCtrl = list(maxfun = 200000)),
+                data = complete_cases, 
+                na.action = na.exclude)
+
+screenreg(list(gg0, gg360, gg374, gg392, gg398, gg423, gg431, gg453, gg470))
+
+latex_outputsensi_2back <- capture.output(  
+    texreg(list(gg0, gg360, gg374, gg392, gg398, gg423, gg431, gg453, gg470),  
+           caption = "Glmer Regression Results",  
+           label = "tab:regression",  
+           booktabs = TRUE,  
+           dcolumn = TRUE,  
+           use.packages = TRUE,  
+           float.pos = "h!",  
+           stars = c(0.01, 0.05, 0.1),  # Customize significance stars  
+           custom.model.names = c("0", "360", "374", "392",   
+                                "398", "423", "431", "453", "470"),  
+           digits = 2)  # Number of decimal places  
+)  
+  
+# Print the LaTeX code  
+cat(paste(latex_outputsensi_2back, collapse = "\n"))  
+
+
+```
+
+
+
+## statistics for publication
+
+```{r stat1, echo=FALSE}
+
+dprime3_stats <- aggregate(dprime3 ~ Groups, data = df, 
+                         FUN = function(x) c(mean = mean(x, na.rm = TRUE), 
+                                           sd = sd(x, na.rm = TRUE)))
+print(dprime3_stats)
+
+cross_tab4 <- table(df$`Are there children in your household?`, df$Groups)
+
+# Add percentages to the table
+cross_tab4_percent <- prop.table(cross_tab4, margin = 2) * 100
+print(cross_tab4_percent)
+
+cross_tab5 <- table(df$`Are you responsible for household purchases?`, df$Groups)
+print(cross_tab5)
+
+# Add percentages to the table
+cross_tab5_percent <- prop.table(cross_tab5, margin = 2) * 100
+print(cross_tab5_percent)
+
+cross_tab6 <- table(df$FamiliarityBrands, df$Groups)
+print(cross_tab6)
+
+# Add percentages to the table
+cross_tab6_percent <- prop.table(cross_tab6, margin = 2) * 100
+print(cross_tab6_percent)
+
+cross_tab7 <- table(df$`On a scale of 1 to 5, how would you rate the amount of information you had to choose cereals according to your nutritional preferences? Where 5 means information overload and 1 means insufficient information.`, df$Groups)
+print(cross_tab7)
+
+# Add percentages to the table
+cross_tab7_percent <- prop.table(cross_tab7, margin = 2) * 100
+print(cross_tab7_percent)
+
+cross_tab8 <- table(df$`On a scale of 1 to 5, how much did you notice the labels on the cereal packages during the experiment? Where 5 means always and 1 means never....69`, df$Groups)
+print(cross_tab8)
+
+# Add percentages to the table
+cross_tab8_percent <- prop.table(cross_tab8, margin = 2) * 100
+print(cross_tab8_percent)
+
+cross_tab9 <- table(df$`On a scale of 1 to 5, how much did you notice the labels on the cereal packages during the experiment? Where 5 means always and 1 means never....88`, df$Groups)
+print(cross_tab9)
+
+# Add percentages to the table
+cross_tab9_percent <- prop.table(cross_tab9, margin = 2) * 100
+print(cross_tab9_percent)
+
+cross_tab10 <- table(df$Income2, df$Groups)
+print(cross_tab10)
+
+# Add percentages to the table
+cross_tab10_percent <- prop.table(cross_tab10, margin = 2) * 100
+print(cross_tab10_percent)
+
+cross_tab11 <- table(df$`Are you trying to lose weight?`, df$Groups)
+print(cross_tab11)
+
+# Add percentages to the table
+cross_tab11_percent <- prop.table(cross_tab11, margin = 2) * 100
+print(cross_tab11_percent)
+
+cross_tab12 <- table(df$Check_Ingredients, df$Groups)
+print(cross_tab12)
+
+cross_tab12_percent <- prop.table(cross_tab12, margin = 2) * 100
+print(cross_tab12_percent)
+
+#Ranking preferences
+
+
+summary_ranking1 <- aggregate(`Cereal healthiness1` ~ Groups, data = df, 
+                              FUN = function(x) c(Mean = mean(x), SD = sd(x)))
+
+summary_ranking2 <- aggregate(`Rank the 8 cereal packages from most preferred to least preferred by dragging the products to change their order of position. The blue number on the left side indicates the position of the product in the list. - IM_cUa2Sgw1Z4KERE2` ~ Groups, data = df, 
+                              FUN = function(x) c(Mean = mean(x), SD = sd(x)))
+
+summary_ranking3 <- aggregate(df$`Rank the 8 cereal packages from most preferred to least preferred by dragging the products to change their order of position. The blue number on the left side indicates the position of the product in the list. - IM_lnH5RoeqxamC6re` ~ Groups, data = df, 
+                              FUN = function(x) c(Mean = mean(x), SD = sd(x)))
+
+summary_ranking4 <- aggregate(df$`Rank the 8 cereal packages from most preferred to least preferred by dragging the products to change their order of position. The blue number on the left side indicates the position of the product in the list. - IM_882CtF42zwvUZv0` ~ Groups, data = df, 
+                              FUN = function(x) c(Mean = mean(x), SD = sd(x)))
+
+summary_ranking5 <- aggregate(df$`Rank the 8 cereal packages from most preferred to least preferred by dragging the products to change their order of position. The blue number on the left side indicates the position of the product in the list. - IM_dgaZUlSdxdpoDbM` ~ Groups, data = df, 
+                              FUN = function(x) c(Mean = mean(x), SD = sd(x)))
+
+summary_ranking6 <- aggregate(df$`Rank the 8 cereal packages from most preferred to least preferred by dragging the products to change their order of position. The blue number on the left side indicates the position of the product in the list. - IM_3r4Nrp3TqC6BOlg` ~ Groups, data = df, 
+                              FUN = function(x) c(Mean = mean(x), SD = sd(x)))
+
+summary_ranking7 <- aggregate(df$`Rank the 8 cereal packages from most preferred to least preferred by dragging the products to change their order of position. The blue number on the left side indicates the position of the product in the list. - IM_6DzLXmUBf30NEXA` ~ Groups, data = df, 
+                              FUN = function(x) c(Mean = mean(x), SD = sd(x)))
+
+summary_ranking8 <- aggregate(df$`Cereal healthiness8` ~ Groups, data = df, 
+                              FUN = function(x) c(Mean = mean(x), SD = sd(x)))
+
+mean(df$`Cereal healthiness1`)
+
+mean(df$`Rank the 8 cereal packages from most preferred to least preferred by dragging the products to change their order of position. The blue number on the left side indicates the position of the product in the list. - IM_cUa2Sgw1Z4KERE2`)
+
+mean(df$`Rank the 8 cereal packages from most preferred to least preferred by dragging the products to change their order of position. The blue number on the left side indicates the position of the product in the list. - IM_lnH5RoeqxamC6re`)
+
+mean(df$`Rank the 8 cereal packages from most preferred to least preferred by dragging the products to change their order of position. The blue number on the left side indicates the position of the product in the list. - IM_882CtF42zwvUZv0`)
+
+mean(df$`Rank the 8 cereal packages from most preferred to least preferred by dragging the products to change their order of position. The blue number on the left side indicates the position of the product in the list. - IM_dgaZUlSdxdpoDbM`)
+
+mean(df$`Rank the 8 cereal packages from most preferred to least preferred by dragging the products to change their order of position. The blue number on the left side indicates the position of the product in the list. - IM_3r4Nrp3TqC6BOlg`)
+
+mean(df$`Rank the 8 cereal packages from most preferred to least preferred by dragging the products to change their order of position. The blue number on the left side indicates the position of the product in the list. - IM_6DzLXmUBf30NEXA`)
+
+mean(df$`Cereal healthiness8`)
+
+cross_tab13 <- table(df$Check_Ingredients, df$Groups)
+print(cross_tab12)
+
+cross_tab12_percent <- prop.table(cross_tab12, margin = 2) * 100
+print(cross_tab12_percent)
+
+
+
+
+```
+
