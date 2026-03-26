@@ -1,42 +1,53 @@
-# Food Labeling: An Experiment to Assess Consumer Choices
-[![License: CC BY 4.0](https://img.shields.io/badge/License-CC_BY_4.0-lightgrey.svg)](https://creativecommons.org/licenses/by/4.0/)
+# 🛒 Food Labeling: Consumer Choices Experiment
 
-The scope of this repository is to provide the comprehensive dataset and R analysis code utilized to determine the extent to which the presence or absence of different food labelling affects consumers' decision-making in an online shopping scenario.
+[![Language](https://img.shields.io/badge/Language-R-276DC3.svg)](https://www.r-project.org/)
+[![Dataset](https://img.shields.io/badge/Dataset-Experimental-blue.svg)](#)
+[![Models](https://img.shields.io/badge/Models-ANOVA_%7C_Ordinal_Logistic-lightgrey.svg)](#)
+[![Status](https://img.shields.io/badge/Status-Published-success.svg)](#)
 
-Conceptually, the methodological approach and models can be split into the following components within the R Markdown document:
-1. **Data Cleaning and Variable Recoding**
-2. **Descriptive Statistics and Chi-Square Comparisons**
-3. **ANOVA Comparisons (Treatment Groups vs. Outcomes)**
-4. **Working Memory Test Metrics (hit rates, false alarms, and d' calculations)**
-5. **Data Visualization (Boxplots, Distributions)**
+> **Executive Summary:** This repository provides the comprehensive dataset and reproducible R pipeline utilized to determine how the presence or absence of different physical food labels affects consumers' decision-making and working memory load during online grocery shopping.
 
-## Repository Structure
+## 🌍 Why This Matters
+* **Consumer Protection:** Understanding how labels influence choices ensures better regulatory policies for public health and nutrition.
+* **Cognitive Load:** The study evaluates not just *what* people choose, but how working memory acts as a hidden limiting factor in processing complex nutritional information.
+* **Actionable Insights:** Provides statistical backing for the implementation of simplified, coarse vs. detailed nutritional labeling on packaging.
 
-The current version of the published package contains three primary files:
-- `Food-labeling.-An-experiment-to-assess-consumer-choices  + Interactions number of calories 29112024 v6 trial specification Zvalues V2.Rmd`: The primary reproducible script containing all the data processing and statistical analysis.
-- `Food_labelling_synthetic.csv`: The experimental dataset (collected August 2024) detailing participants' cereal choices and household circumstances.
-- `s41043-025-01076-x.pdf`: The final published academic paper.
+## 📊 Dataset
+The exact variables and participant answers gathered in the study are provided cleanly in `Food_labelling_synthetic.csv`.
+- **Source:** Online Experimental Survey (Collected August 2024)
+- **Features:** Demographics, Cereal Choices (Absent, Coarse, Detailed Labels), Working Memory capacity (n-back tests).
+- **Target Variable:** Consumer Preference and Nutritional Choice.
 
-## Setup R Environment
+## 🔬 Methodology Pipeline
 
-Before running the analysis, please configure your `R` environment to ensure all script dependencies are met.
+`Data Cleaning & Preprocessing` ➔ `Descriptive Statistics (Chi-Square)` ➔ `Treatment Group ANOVA` ➔ `Working Memory (d') Scoring` ➔ `Ordinal Logistic Modeling`
 
-### Installing Dependencies
+## 🤖 Models & Analysis Benchmarked
+| Analytical Method | Purpose in Study |
+| :--- | :--- |
+| **Chi-Square Tests** | To verify demographic balance and independence across the three experimental treatment groups. |
+| **ANOVA** | To determine statistically significant mean differences in cereal preferences across label constraints. |
+| **Signal Detection Theory** | Calculating `d'` (d-prime) to measure cognitive sensitivity and distinction in the n-back memory tasks. |
 
-Open your standard R console or RStudio and run:
+## 🚀 How to Run Locally
 
-```r
+### 1. Prerequisites
+Ensure you have **R or RStudio** installed with the following necessary libraries:
+```R
 install.packages(c("readr", "dplyr", "Matrix", "lme4", "texreg", "ggplot2", "tidyr"))
 ```
 
-## Steps for running the analysis
+### 2. Execution
+1. Clone the repository to your local machine.
+2. Open `consumer_choices_analysis.Rmd` in RStudio.
+3. Update the working directory path in the initial Data Import chunk to point to your cloned folder containing `Food_labelling_synthetic.csv`.
+4. Run all chunks sequentially, or **Knit to HTML/PDF** to reproduce the entire study, outputs, and visualizations organically.
 
-1. Clone this GitHub repository locally.
-```bash
-git clone https://github.com/constanzaavalos/<Repository_Name>
-cd <Repository_Name>
-```
+## 📁 Project Structure
+The repository is kept intentionally flat for maximum reproducibility:
+* `consumer_choices_analysis.Rmd` — The primary reproducible analysis pipeline.
+* `Food_labelling_synthetic.csv` — The raw experimental dataset.
+* `published_paper.pdf` — The final published academic paper.
 
-2. Open the `.Rmd` file in RStudio or your preferred IDE.
-3. Update the working directory path in the `data` chunk to point to your local cloned repository directory (where `Food_labelling_synthetic.csv` is located).
-4. Run all chunks sequentially or "Knit" the document to an HTML/PDF output to reproduce the full analysis results.
+---
+👤 **Author**: Constanza Avalos-Valdebenito
