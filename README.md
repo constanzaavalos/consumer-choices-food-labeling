@@ -47,7 +47,11 @@ install.packages(c("readr", "dplyr", "Matrix", "lme4", "texreg", "ggplot2", "tid
 The repository is kept intentionally flat for maximum reproducibility:
 * `consumer_choices_analysis.Rmd` — The primary reproducible analysis pipeline.
 * `Food_labelling_synthetic.csv` — The raw experimental dataset.
-* `published_paper.pdf` — The final published academic paper.
+
+## 📄 Citation
+If you use this code or dataset in your research, please cite the original paper:
+
+> Avalos, C. (2025). Food label granularity and working memory: effects on food choice in a randomized controlled trial. *Journal of Health, Population and Nutrition*, *44*, Article 375. https://doi.org/10.1186/s41043-025-01076-x
 
 ---
 👤 **Author**: Constanza Avalos-Valdebenito
