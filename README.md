@@ -13,7 +13,7 @@
 * **Actionable Insights:** Provides statistical backing for the implementation of simplified, coarse vs. detailed nutritional labeling on packaging.
 
 ## 📊 Dataset
-The exact variables and participant answers gathered in the study are provided cleanly in `Food_labelling_synthetic.csv`.
+A synthetic dataset (food_labeling_synthetic.csv) that replicates the structure, variable types, and statistical properties of the original participant data is provided here, as the real dataset cannot be shared publicly for ethics approval terms. Running the analysis pipeline on this synthetic dataset reproduces the same modelling steps and output structure as the original study.
 - **Source:** Online Experimental Survey (Collected August 2024)
 - **Features:** Demographics, Cereal Choices (Absent, Coarse, Detailed Labels), Working Memory capacity (n-back tests).
 - **Target Variable:** Consumer Preference and Nutritional Choice.
