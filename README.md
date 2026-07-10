@@ -47,7 +47,7 @@ install.packages(c("readr", "dplyr", "Matrix", "effects", "glmer", "lme4", "texr
 ## 📁 Project Structure
 The repository is kept intentionally flat for maximum reproducibility:
 * `consumer_choices_analysis.Rmd` — The primary reproducible analysis pipeline.
-* `Food_labelling_synthetic.csv` — The synthetic experimental dataset. The actual anonymized database is available upon request.
+* `Food_labelling_synthetic.csv` — This is a synthetic dataset that mimics the real data's structure, used because the real data cannot be shared for consent reasons.. The actual anonymized database is available upon request.
 
 ## 📄 Citation
 If you use this code or dataset in your research, please cite the original paper:
