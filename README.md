@@ -35,7 +35,7 @@ The exact variables and participant answers gathered in the study are provided c
 ### 1. Prerequisites
 Ensure you have **R or RStudio** installed with the following necessary libraries:
 ```R
-install.packages(c("readr", "dplyr", "Matrix", "lme4", "texreg", "ggplot2", "tidyr"))
+install.packages(c("readr", "dplyr", "Matrix", "effects", "glmer", "lme4", "texreg", "ggplot2", "tidyr"))
 ```
 
 ### 2. Execution
