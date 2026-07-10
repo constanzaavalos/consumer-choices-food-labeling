@@ -5,7 +5,7 @@
 [![Models](https://img.shields.io/badge/Models-ANOVA_%7C_Ordinal_Logistic-lightgrey.svg)](#)
 [![Status](https://img.shields.io/badge/Status-Published-success.svg)](#)
 
-> **Executive Summary:** This repository provides the comprehensive dataset and reproducible R pipeline utilized to determine how the presence or absence of different physical food labels affects consumers' decision-making and working memory load during online grocery shopping.
+> **Executive Summary:** This repository provides the comprehensive dataset and reproducible R pipeline utilized to determine how the presence or absence of different food labels formats affect consumers' decision-making and working memory load during online grocery shopping.
 
 ## 🌍 Why This Matters
 * **Consumer Protection:** Understanding how labels influence choices ensures better regulatory policies for public health and nutrition.
@@ -28,7 +28,7 @@ The exact variables and participant answers gathered in the study are provided c
 | **Chi-Square Tests** | To verify demographic balance and independence across the three experimental treatment groups. |
 | **ANOVA** | To determine statistically significant mean differences in cereal preferences across label constraints. |
 | **Signal Detection Theory** | Calculating `d'` (d-prime) to measure cognitive sensitivity and distinction in the n-back memory tasks. |
-| **Multilevel linear and Multilevel logistic model** | Hierarchical data, given that each individual completes 16 trials. Assuming non-independence choices. . |
+| **Multilevel linear and Multilevel logistic model** | Hierarchical data, given that each individual completes 16 trials. Assuming non-independence choices. |
 
 ## 🚀 How to Run Locally
 
@@ -47,7 +47,7 @@ install.packages(c("readr", "dplyr", "Matrix", "effects", "glmer", "lme4", "texr
 ## 📁 Project Structure
 The repository is kept intentionally flat for maximum reproducibility:
 * `consumer_choices_analysis.Rmd` — The primary reproducible analysis pipeline.
-* `Food_labelling_synthetic.csv` — The raw experimental dataset.
+* `Food_labelling_synthetic.csv` — The synthetic experimental dataset. The actual anonymized database is available upon request.
 
 ## 📄 Citation
 If you use this code or dataset in your research, please cite the original paper:
