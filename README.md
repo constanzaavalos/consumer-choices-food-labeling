@@ -28,6 +28,7 @@ The exact variables and participant answers gathered in the study are provided c
 | **Chi-Square Tests** | To verify demographic balance and independence across the three experimental treatment groups. |
 | **ANOVA** | To determine statistically significant mean differences in cereal preferences across label constraints. |
 | **Signal Detection Theory** | Calculating `d'` (d-prime) to measure cognitive sensitivity and distinction in the n-back memory tasks. |
+| **Multilevel linear model and Multilevel logistic model** | Calculating `d'` (d-prime) to measure cognitive sensitivity and distinction in the n-back memory tasks. |
 
 ## 🚀 How to Run Locally
 
